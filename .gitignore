@@ -1,0 +1,17 @@
+.env
+venv/
+.venv/
+__pycache__/
+.pytest_cache/
+*.db
+*.sqlite
+.mypy_cache/
+*.pyc
+*.pyo
+.DS_Store
+output/
+.test-tmp/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+dsh-client-ui-aqua/

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="title desc">
+  <title id="title">代码库智能分析架构</title>
+  <desc id="desc">文件依次经过切块、检索、生成、Agent 工具调用、评估和持久化。</desc>
+  <rect width="1200" height="260" fill="#f8fafc"/>
+  <g font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="19" fill="#1f2933">
+    <g transform="translate(36 70)">
+      <rect width="154" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="77" y="38" text-anchor="middle" font-weight="700">文件</text>
+      <text x="77" y="66" text-anchor="middle" font-size="14" fill="#52616f">请求快照</text>
+    </g>
+    <g transform="translate(236 70)">
+      <rect width="154" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="77" y="38" text-anchor="middle" font-weight="700">切块</text>
+      <text x="77" y="66" text-anchor="middle" font-size="14" fill="#52616f">符号 + 行号</text>
+    </g>
+    <g transform="translate(436 70)">
+      <rect width="154" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="77" y="38" text-anchor="middle" font-weight="700">检索</text>
+      <text x="77" y="66" text-anchor="middle" font-size="14" fill="#52616f">向量 + BM25</text>
+    </g>
+    <g transform="translate(636 70)">
+      <rect width="154" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="77" y="38" text-anchor="middle" font-weight="700">回答</text>
+      <text x="77" y="66" text-anchor="middle" font-size="14" fill="#52616f">prompt + 流式</text>
+    </g>
+    <g transform="translate(836 70)">
+      <rect width="154" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="77" y="38" text-anchor="middle" font-weight="700">Agent</text>
+      <text x="77" y="66" text-anchor="middle" font-size="14" fill="#52616f">工具 + 追踪</text>
+    </g>
+    <g transform="translate(1036 70)">
+      <rect width="128" height="92" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="64" y="38" text-anchor="middle" font-weight="700">评估</text>
+      <text x="64" y="66" text-anchor="middle" font-size="14" fill="#52616f">质量门禁</text>
+    </g>
+  </g>
+  <g stroke="#1f4f82" stroke-width="3" fill="none" marker-end="url(#arrow)">
+    <path d="M190 116 H232"/>
+    <path d="M390 116 H432"/>
+    <path d="M590 116 H632"/>
+    <path d="M790 116 H832"/>
+    <path d="M990 116 H1032"/>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1f4f82"/>
+    </marker>
+  </defs>
+  <g font-family="Segoe UI, Microsoft YaHei, sans-serif" font-size="14" fill="#52616f">
+    <text x="36" y="220">FastAPI 提供 /chat、/chat/stream、/agent/run 和 /evaluate/generation；前端展示引用来源、工具事件和质量分数。</text>
+  </g>
+</svg>

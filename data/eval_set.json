@@ -1,0 +1,22 @@
+[
+  {"question": "How does the chunk_file function split code into chunks?", "expected_file": "codebase_agent/rag/chunker.py", "top_k": 5},
+  {"question": "What embedding model does the OpenAIEmbeddingProvider use?", "expected_file": "codebase_agent/rag/embeddings.py", "top_k": 5},
+  {"question": "How does InMemoryVectorStore perform cosine similarity search?", "expected_file": "codebase_agent/rag/vector_store.py", "top_k": 5},
+  {"question": "How is the RAG prompt built with context and question?", "expected_file": "codebase_agent/rag/prompt_builder.py", "top_k": 5},
+  {"question": "How does the LLM provider generate responses and handle errors?", "expected_file": "codebase_agent/rag/llm.py", "top_k": 5},
+  {"question": "What FastAPI routes are defined for search and chat?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
+  {"question": "How does the database module initialize and manage SQLite connections?", "expected_file": "codebase_agent/backend/database.py", "top_k": 5},
+  {"question": "What SQLAlchemy models are defined for the analysis records?", "expected_file": "codebase_agent/backend/models.py", "top_k": 5},
+  {"question": "How does GitHubClient handle API errors and rate limiting?", "expected_file": "codebase_agent/backend/github_client.py", "top_k": 5},
+  {"question": "What custom exception classes are defined in the project?", "expected_file": "codebase_agent/exceptions.py", "top_k": 5},
+  {"question": "What is the SearchResultItem model and what fields does it include?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
+  {"question": "How does POST /search convert raw search results into SearchResultItem objects?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
+  {"question": "How does the /chat endpoint handle errors from embedding and LLM providers?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
+  {"question": "What metadata fields does InMemoryVectorStore store for each chunk?", "expected_file": "codebase_agent/rag/vector_store.py", "top_k": 5},
+  {"question": "How does the code analyzer extract symbols from Python source files?", "expected_file": "codebase_agent/code_analyzer.py", "top_k": 5},
+  {"question": "What validation does ChatRequest perform on the question field?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
+  {"question": "How does OpenAIEmbeddingProvider handle missing or invalid API keys?", "expected_file": "codebase_agent/rag/embeddings.py", "top_k": 5},
+  {"question": "What chunk_id format does the chunker generate for each chunk?", "expected_file": "codebase_agent/rag/chunker.py", "top_k": 5},
+  {"question": "How does the search_code function validate input parameters before searching?", "expected_file": "codebase_agent/rag/vector_store.py", "top_k": 5},
+  {"question": "How does the middleware log HTTP requests with method, path, status, and duration?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5}
+]

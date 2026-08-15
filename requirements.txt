@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+httpx
+python-dotenv
+pytest
+SQLAlchemy
+openai
+qdrant-client
+psycopg[binary]
+sentence-transformers
