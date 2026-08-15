@@ -13,11 +13,11 @@
 
 ```powershell
 # 后端
-cd C:\Users\wjb\ai-training\project\codebase-agent
+cd codebase-agent
 venv\Scripts\python.exe -m uvicorn codebase_agent.backend.main:app --reload --host 127.0.0.1 --port 8000
 
 # 前端
-cd C:\Users\wjb\ai-training\project\codebase-agent\frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -185,14 +185,6 @@ curl http://localhost:8000/health
 
 ```powershell
 docker compose down
-```
-
-### 可选 MySQL 环境
-
-默认只启动 API 服务，并使用 SQLite 持久化卷保存数据。需要同时启动 MySQL 对照环境时再打开 profile：
-
-```powershell
-docker compose --profile mysql up --build
 ```
 
 ### 本地 venv 启动 vs 容器启动
@@ -499,7 +491,7 @@ codebase_agent/rag/qdrant_store.py     # Qdrant 适配层（同一接口）
 ### 启动 Qdrant
 
 ```bash
-# Docker Compose（可选 profile，不影响默认 app/mysql 启动）
+# Docker Compose（可选 profile，不影响默认 app 启动）
 docker compose --profile qdrant up -d qdrant
 ```
 

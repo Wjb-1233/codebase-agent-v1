@@ -10,25 +10,6 @@ services:
     volumes:
       - db_data:/data
 
-  mysql:
-    image: mysql:8.0
-    profiles:
-      - mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-codebase_agent}
-      MYSQL_USER: ${MYSQL_USER:-app_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_pass}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   postgres:
     image: postgres:16
     profiles:
@@ -60,6 +41,5 @@ services:
 
 volumes:
   db_data:
-  mysql_data:
   qdrant_data:
   postgres_data:
