@@ -39,7 +39,7 @@ class IdentityReranker:
 class CrossEncoderReranker:
     """sentence-transformers CrossEncoder 重排器。
 
-    模型按需加载。加载或预测失败时使用 fallback，避免演示和本地开发时主链路不可用。
+    模型按需加载。加载或预测失败时使用 fallback，避免本地开发和 CI 环境中断主链路。
     """
 
     _DEFAULT_MODEL = "BAAI/bge-reranker-v2-m3"

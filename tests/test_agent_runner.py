@@ -18,7 +18,7 @@ from codebase_agent.agent.runner import (
     AgentToolCall,
     run_agent,
 )
-from codebase_agent.agent.model import FakeAgentModelProvider
+from tests.fakes import FakeAgentModelProvider
 from codebase_agent.agent.executor import _bootstrap_registry
 from codebase_agent.rag.chunker import Chunk
 

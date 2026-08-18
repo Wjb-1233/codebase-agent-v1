@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart LR
-    U["用户 / 面试官"] --> FE["React + Vite 前端控制台"]
+    U["用户"] --> FE["React + Vite 前端控制台"]
     FE --> API["FastAPI 接口层"]
     API --> RAG["RAG 检索问答链路"]
     API --> AG["Agent 执行链路"]

@@ -7,6 +7,25 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: sqlite:////data/analysis.db
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      LOCAL_EMBEDDING_MODEL: ${LOCAL_EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
+      VECTOR_STORE_BACKEND: ${VECTOR_STORE_BACKEND:-memory}
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-code_chunks}
+      QDRANT_VECTOR_SIZE: ${QDRANT_VECTOR_SIZE:-1536}
+      RERANKER_ENABLED: ${RERANKER_ENABLED:-false}
+      RERANKER_PROVIDER: ${RERANKER_PROVIDER:-identity}
+      RERANKER_MODEL: ${RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}
+      AGENT_MEMORY_DB_PATH: /data/agent_memory.db
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173}
     volumes:
       - db_data:/data
 

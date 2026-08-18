@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from codebase_agent.backend.main import app, get_agent_memory_store, get_agent_model_provider, get_embedding_provider
 from codebase_agent.agent.runner import AgentDecision
-from codebase_agent.agent.model import FakeAgentModelProvider
+from tests.fakes import FakeAgentModelProvider
 
 
 client = TestClient(app)

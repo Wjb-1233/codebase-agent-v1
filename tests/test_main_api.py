@@ -13,18 +13,6 @@ def test_health():
     assert resp.json() == {"status": "ok"}
 
 
-def test_hello_with_name():
-    resp = client.get("/hello", params={"name": "wjb"})
-    assert resp.status_code == 200
-    assert resp.json() == {"message": "Hello, wjb"}
-
-
-def test_hello_default():
-    resp = client.get("/hello")
-    assert resp.status_code == 200
-    assert resp.json() == {"message": "Hello, World"}
-
-
 def test_analyze_success():
     resp1 = MagicMock()
     resp1.status_code = 200
@@ -114,7 +102,7 @@ def test_analyze_saves_and_history_returns_record(tmp_path):
             mock_instance.get_file_tree = AsyncMock(return_value=["main.py", "app.py", "utils.py"])
             mock_instance.__aenter__.return_value = mock_instance
             mock_github_cls.return_value = mock_instance
-            payload = {"repo_url": "https://github.com/test/demo"}
+            payload = {"repo_url": "https://github.com/test/sample"}
             resp = client.post("/analyze", json=payload)
             assert resp.status_code == 200
             data = resp.json()
@@ -125,7 +113,7 @@ def test_analyze_saves_and_history_returns_record(tmp_path):
         history_list = history_resp.json()
         assert len(history_list) == 1
         record = history_list[0]
-        assert record["repo_url"] == "https://github.com/test/demo"
+        assert record["repo_url"] == "https://github.com/test/sample"
         assert record["count"] == 3
     finally:
         app.dependency_overrides.clear()

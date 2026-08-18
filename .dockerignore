@@ -9,3 +9,8 @@ output/
 *.pyo
 .env
 .git
+.dsh-vision-toolkit/
+.npm-cache/
+DSH-Transparent-UI-Plugin/
+dsh-client-ui-whale/
+wallpaper/

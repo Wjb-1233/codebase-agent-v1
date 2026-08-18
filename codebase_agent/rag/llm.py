@@ -107,20 +107,3 @@ class OpenAILLMProvider:
                 yield str(delta)
         if not yielded:
             raise LLMError("LLM 流式返回了空响应")
-
-
-class FakeLLMProvider:
-    """测试和本地示例使用的确定性提供器。"""
-
-    def __init__(self, fixed_response: str = "基于检索代码片段生成的模拟回答") -> None:
-        self.fixed_response = fixed_response
-        self.last_prompt: str | None = None
-
-    def generate(self, prompt: str) -> str:
-        self.last_prompt = prompt
-        return self.fixed_response
-
-    def stream(self, prompt: str) -> Iterator[str]:
-        self.last_prompt = prompt
-        for index in range(0, len(self.fixed_response), 12):
-            yield self.fixed_response[index:index + 12]

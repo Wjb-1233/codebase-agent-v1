@@ -11,7 +11,7 @@ from codebase_agent.exceptions import ConfigError, GitHubAPIError, NetworkError,
 class FakeGitHubClient:
     def __init__(self, repo_url):
         self.repo_url = repo_url
-        self.owner = "demo"
+        self.owner = "sample"
         self.repo_name = "project"
 
     async def __aenter__(self):
@@ -31,7 +31,7 @@ def test_main_writes_output_and_logs_timed_operations(monkeypatch, tmp_path, cap
         "sys.argv",
         [
             "scripts/github_fetcher.py",
-            "https://github.com/demo/project",
+            "https://github.com/sample/project",
             "--output",
             str(output_path),
         ],
@@ -41,8 +41,8 @@ def test_main_writes_output_and_logs_timed_operations(monkeypatch, tmp_path, cap
         asyncio.run(github_fetcher.main())
 
     data = json.loads(output_path.read_text(encoding="utf-8"))
-    assert data["repo_url"] == "https://github.com/demo/project"
-    assert data["owner"] == "demo"
+    assert data["repo_url"] == "https://github.com/sample/project"
+    assert data["owner"] == "sample"
     assert data["repo"] == "project"
     assert data["total_files"] == 2
     assert [item["path"] for item in data["files"]] == ["README.md", "src/app.py"]
@@ -72,7 +72,7 @@ def test_main_exits_with_friendly_message_for_fetch_errors(
         "sys.argv",
         [
             "scripts/github_fetcher.py",
-            "https://github.com/demo/project",
+            "https://github.com/sample/project",
             "--output",
             str(output_path),
         ],

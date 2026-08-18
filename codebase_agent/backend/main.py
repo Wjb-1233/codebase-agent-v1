@@ -39,7 +39,7 @@ from codebase_agent.rag.qdrant_store import QdrantVectorStore, VectorStoreError
 from codebase_agent.rag.evaluator import GenerationEvalCase, evaluate_generation
 from codebase_agent.agent.memory_store import AgentMemoryStore
 from codebase_agent.agent.runner import AgentModelProvider, AgentRunResult, AgentToolCall, run_agent as _run_agent
-from codebase_agent.agent.model import FakeAgentModelProvider, OpenAIAgentProvider
+from codebase_agent.agent.model import OpenAIAgentProvider
 
 app = FastAPI()
 
@@ -82,11 +82,6 @@ async def log_requests(request: Request, call_next):
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
-
-
-@app.get("/hello")
-def hello(name: str = "World") -> dict[str, str]:
-    return {"message": f"Hello, {name}"}
 
 
 class AnalyzeRequest(BaseModel):
@@ -308,7 +303,7 @@ def _env_enabled(value: str | None) -> bool:
 def get_reranker() -> CrossEncoderReranker | IdentityReranker:
     """返回当前配置的重排器。
 
-    演示稳定性优先：默认使用 ``IdentityReranker``，因为真实 CrossEncoder 模型较大，
+    本地和 CI 稳定性优先：默认使用 ``IdentityReranker``，因为真实 CrossEncoder 模型较大，
     首次使用可能需要下载。设置 ``RERANKER_ENABLED=true`` 或
     ``RERANKER_PROVIDER=cross_encoder`` 后才启用真实重排。
     """

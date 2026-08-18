@@ -1,6 +1,6 @@
 # Agent / LangGraph 流程证据
 
-本文档记录 `codebase-agent` 当前 Agent 执行流程，并把它映射到 LangGraph 风格的状态机。当前运行时由 `codebase_agent/agent/runner.py` 手写实现；下面的图用于面试解释和后续迁移，不表示项目已经强依赖 LangGraph。
+本文档记录 `codebase-agent` 当前 Agent 执行流程，并把它映射到 LangGraph 风格的状态机。当前运行时由 `codebase_agent/agent/runner.py` 手写实现；下面的图用于说明状态流和后续迁移边界，不表示项目已经强依赖 LangGraph。
 
 ## 当前 Agent 运行流程
 
@@ -55,9 +55,9 @@ stateDiagram-v2
     PersistMemory --> [*]
 ```
 
-## 面试解释
+## 架构说明
 
-项目当前没有直接把主流程写成 LangGraph，而是先手写 Agent runner。这样做的目的，是把核心控制流暴露清楚：状态、模型决策、工具分发、事件记录、循环保护和最终回答。这样更容易测试，也更容易在面试中解释。
+项目当前没有直接把主流程写成 LangGraph，而是先手写 Agent runner。这样做的目的，是把核心控制流暴露清楚：状态、模型决策、工具分发、事件记录、循环保护和最终回答。这样更容易测试，也便于后续迁移到图状态框架。
 
 如果后续迁移到 LangGraph，它替换的是编排层，不会替换工具、记忆、RAG 检索和错误处理。因为当前每个函数已经能对应到一个图节点或条件边，迁移路径比较直接。
 

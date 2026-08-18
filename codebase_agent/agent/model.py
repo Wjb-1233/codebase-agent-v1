@@ -1,55 +1,17 @@
 """Agent 模型提供器：决策与答案生成。
 
-这里的"模型"指 LLM——但 runner 不关心是 OpenAI、本地模型还是测试假数据。
-它只通过 AgentModelProvider 协议说话，所以测试可以用假实现，生产可以替换成真实实现。
+这里的"模型"指 LLM。runner 不关心底层供应商，只通过
+AgentModelProvider 协议调用模型，生产环境默认使用 OpenAI 兼容接口。
 """
 
 from __future__ import annotations
 
 import os
-from typing import Sequence
 
 from dotenv import load_dotenv
 
 from codebase_agent.agent.runner import AgentDecision, AgentModelProvider, AgentState
 from codebase_agent.exceptions import ConfigError, LLMError
-
-
-# ── 假模型提供器（测试专用）──
-
-class FakeAgentModelProvider(AgentModelProvider):
-    """按预设列表返回决策，适合测试 Agent 循环的所有分支。
-
-    用法：
-        fake = FakeAgentModelProvider(decisions=[
-            AgentDecision(False, tool_name="list_files", arguments={"file_pattern": "*.py"}),
-            AgentDecision(False, tool_name="get_file_content", arguments={"path": "main.py"}),
-            AgentDecision(True, content="项目结构分析完毕。"),
-        ], final_answer="根据以上工具结果，项目包含 3 个 Python 文件。")
-
-    - decisions 按调用顺序返回，用完后再调用 decide() 返回直接回答。
-    - final_answer 是 answer() 的固定返回，用来验证"模型基于工具结果生成答案"这一步。
-    """
-
-    def __init__(
-        self,
-        decisions: Sequence[AgentDecision] | None = None,
-        final_answer: str = "基于工具执行结果的分析。",
-    ) -> None:
-        self._decisions = list(decisions or [])
-        self._index = 0
-        self.final_answer = final_answer
-
-    def decide(self, state: AgentState) -> AgentDecision:
-        if self._index < len(self._decisions):
-            decision = self._decisions[self._index]
-            self._index += 1
-            return decision
-        # 决策列表耗尽 → 默认返回直接回答
-        return AgentDecision(is_direct_answer=True, content=self.final_answer)
-
-    def answer(self, state: AgentState) -> str:
-        return self.final_answer
 
 
 # ── 真实 OpenAI 工具调用提供器 ──

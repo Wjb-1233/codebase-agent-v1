@@ -5,9 +5,9 @@
 当前通过 FastAPI 提供 HTTP 接口，底层通过 GitHub API 获取仓库文件树，分析结果通过 SQLAlchemy 持久化；本地默认 SQLite，容器/生产可通过 DATABASE_URL 切换 PostgreSQL。
 
 ---
-## 作品集演示入口
+## 项目概览
 
-这个项目现在包含后端 API、React/Vite 前端操作台、Agent/LangGraph 流程图证据、README 架构图和多语言静态代码结构图，适合作为面试时的作品集项目展示。
+这个项目包含后端 API、React/Vite 前端操作台、Agent 状态流说明、系统架构图和多语言静态代码结构分析能力，可用于代码库理解、检索问答、工具调用和质量评估。
 
 ### 本地启动
 
@@ -24,11 +24,11 @@ npm run dev
 
 前端默认访问后端 `http://127.0.0.1:8000`，可在页面右上角修改“后端地址”。
 
-### 前端能力
+### 前端控制台能力
 
 - RAG 问答：调用 `/chat`，展示回答、引用来源、分数、父文档信息和 `vector_backend`。
 - 流式问答：调用 `/chat/stream`，展示 SSE `chunk/done/error` 流程。
-- Agent 演示：调用 `/agent/run`，展示回答、工具调用、执行事件、追踪 ID 和会话记忆状态。
+- Agent 分析：调用 `/agent/run`，展示回答、工具调用、执行事件、追踪 ID 和会话记忆状态。
 - 代码结构图：调用 `/code-graph`，展示文件节点、函数/类/方法符号和 import 依赖关系；Python 使用 AST，JavaScript/TypeScript、Java、Go 使用轻量静态解析规则。
 - 生成评估：调用 `/evaluate/generation`，展示忠实度、答案相关性、无证据支撑内容和缺失关键词。
 
@@ -52,10 +52,10 @@ flowchart LR
     EV --> METRICS["Hit@K / MRR / 忠实度 / 相关性"]
 ```
 
-### 流程图证据
+### 架构文档
 
 - 系统架构图：`docs/architecture.md`
-- Agent/LangGraph 流程图证据：`docs/agent-langgraph-flow.md`
+- Agent 状态流说明：`docs/agent-langgraph-flow.md`
 - 前端工程：`frontend/`
 
 ---
@@ -64,7 +64,6 @@ flowchart LR
 ## 当前功能
 
 - `GET /health` — 健康检查
-- `GET /hello?name=World` — 回声接口，快速验证服务可用
 - `POST /analyze` — 提交 GitHub 仓库地址，拉取文件列表并记录分析历史
 - `GET /history?limit=20` — 查看最近分析记录
 - `POST /code-graph` — 基于请求文件快照做多语言静态结构分析，返回文件、符号和 import 依赖图
@@ -111,7 +110,7 @@ codebase-agent/
 ├── data/                        # 固定评估集与评估结果
 ├── tests/                       # pytest 测试
 ├── requirements.txt
-├── requirements-rerank.txt      # 真实重排可选依赖
+├── requirements-dev.txt         # 测试和本地开发依赖
 ├── Dockerfile                   # 容器镜像构建
 ├── .dockerignore                # 容器构建排除文件
 ├── compose.yaml                 # Docker Compose 服务编排
@@ -137,7 +136,7 @@ python -m venv venv
 # 3. 激活虚拟环境
 venv\Scripts\activate
 
-# 4. 安装依赖
+# 4. 安装运行依赖
 pip install -r requirements.txt
 
 # 5. 配置环境变量
@@ -194,7 +193,7 @@ docker compose down
 | 环境配置 | 手动装 Python、创建 venv、pip install | `docker compose up --build` 一条命令 |
 | 隔离性 | 依赖全局 Python 环境 | 容器内独立运行，不污染宿主机 |
 | 跨机器复现 | "在我的机器上能跑" | 任何装了 Docker 的机器都能跑 |
-| 适用场景 | 本地开发调试 | 演示、部署、CI |
+| 适用场景 | 本地开发调试 | 部署、CI、环境复现 |
 
 ### 容器启动排错
 
@@ -211,6 +210,9 @@ docker compose down
 ## 运行测试
 
 ```powershell
+# 本地首次运行测试前安装开发依赖
+pip install -r requirements-dev.txt
+
 # Windows 推荐使用项目 venv，并指定本地临时目录，避免系统 Temp 权限影响测试
 venv\Scripts\python.exe -m pytest -q -p no:cacheprovider --basetemp .test-tmp\pytest-readme
 ```
@@ -334,7 +336,7 @@ curl -X POST http://127.0.0.1:8000/chat -H "Content-Type: application/json" -d "
 
 ## 数据库层
 
-项目数据库层已从本地 SQLite 持久化演进到 **SQLAlchemy 2.x ORM**，通过 `DATABASE_URL` 支持 SQLite/PostgreSQL 切换，适合本地开发、Docker 演示和后续迁移管理。
+项目数据库层使用 **SQLAlchemy 2.x ORM**，通过 `DATABASE_URL` 支持 SQLite/PostgreSQL 切换，适合本地开发、容器化运行和后续迁移管理。
 
 ### 为什么迁移
 
@@ -387,7 +389,7 @@ Alembic Migration
      增量 schema 变更，生产环境可控升级/回退
 ```
 
-当前已通过 `DATABASE_URL` 环境变量和 `compose.yaml` 支持容器化启动；默认 SQLite 可快速演示，开启 `postgres` profile 后可切换 PostgreSQL。
+当前已通过 `DATABASE_URL` 环境变量和 `compose.yaml` 支持容器化启动；默认 SQLite 可快速运行，开启 `postgres` profile 后可切换 PostgreSQL。
 
 ---
 
@@ -412,7 +414,7 @@ EMBEDDING_MODEL=BAAI/bge-m3
 LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ```
 
-`OPENAI_*` 用于 Chat/Agent，可以接 DeepSeek 或 OpenAI 兼容服务；`EMBEDDING_*` 单独用于外部 Embedding，避免把向量请求发到不支持 Embedding 的 Chat 服务。`EMBEDDING_PROVIDER=openai` 适合生产或有稳定 OpenAI 兼容 Embeddings 服务的环境；`EMBEDDING_PROVIDER=local` 使用本地 sentence-transformers，适合面试现场离线演示。测试默认使用假的 embedding/LLM 提供器，不请求真实外部 API；`InMemoryVectorStore` 的余弦相似度、Top-K 排序、metadata、Prompt 构建、LLM 失败和 `/chat` 响应链路已经有测试覆盖。
+`OPENAI_*` 用于 Chat/Agent，可以接 DeepSeek 或 OpenAI 兼容服务；`EMBEDDING_*` 单独用于外部 Embedding，避免把向量请求发到不支持 Embedding 的 Chat 服务。`EMBEDDING_PROVIDER=openai` 适合生产或有稳定 OpenAI 兼容 Embeddings 服务的环境；`EMBEDDING_PROVIDER=local` 使用本地 sentence-transformers，适合离线或内网环境。测试默认使用假的 embedding/LLM 提供器，不请求真实外部 API；`InMemoryVectorStore` 的余弦相似度、Top-K 排序、metadata、Prompt 构建、LLM 失败和 `/chat` 响应链路已经有测试覆盖。
 
 ---
 
@@ -471,7 +473,7 @@ LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 
 - 检索质量使用 Hit@K / MRR 评估，定位召回是否命中目标文件。
 - 生成质量新增 `/evaluate/generation`，离线评估忠实度、答案相关性、无证据支撑内容和缺失关键词。
-- 评估默认不依赖真实 API key，适合 CI、演示和面试时解释“如何约束幻觉”。
+- 评估默认不依赖真实 API key，适合 CI、本地验收和回归检查。
 
 ---
 
@@ -515,7 +517,7 @@ docker compose --profile qdrant up -d qdrant
 ### API 自动切换
 
 - `/search`、`/chat`、`/chat/stream` 已接入 `VECTOR_STORE_BACKEND`。
-- 默认 `memory` 适合本地快速演示；设置 `VECTOR_STORE_BACKEND=qdrant` 后自动创建基于文件内容 hash 的 Qdrant collection，避免不同项目 chunk 混排。
+- 默认 `memory` 适合本地快速运行；设置 `VECTOR_STORE_BACKEND=qdrant` 后自动创建基于文件内容 hash 的 Qdrant collection，避免不同项目 chunk 混排。
 - API 响应包含 `vector_backend`，可直接说明本次请求使用的是内存索引还是 Qdrant 持久索引。
 
 ---
@@ -594,9 +596,9 @@ curl -X POST http://localhost:8000/agent/run \
 
 ---
 
-## 求职验收状态
+## 工程能力状态
 
-当前项目不按 Demo 验收，而按作品集项目验收：API 可运行、RAG 可检索、Agent 可调用工具、结果可追踪、评估可复现、Docker 可演示。
+当前项目按可运行、可测试、可解释和可复现标准验收：API 可运行、RAG 可检索、Agent 可调用工具、结果可追踪、评估可复现、Docker 可启动。
 
 ### 已完成能力
 
@@ -613,12 +615,12 @@ curl -X POST http://localhost:8000/agent/run \
 
 ### 可选增强项
 
-这些不是当前验收阻塞项，只在有环境或面试展示需要时开启：
+这些不是当前验收阻塞项，只在具备运行环境或质量验收需要时开启：
 
 - `RERANKER_ENABLED=true`：加载真实 Cross-Encoder Reranker，首次运行可能下载模型。
 - `VECTOR_STORE_BACKEND=qdrant`：使用 Qdrant 持久向量库，需要先启动 `docker compose --profile qdrant up -d qdrant`。
 - PostgreSQL：启动 `docker compose --profile postgres up -d postgres` 后，将 `DATABASE_URL` 设置为 `postgresql+psycopg://app_user:app_pass@localhost:5432/codebase_agent`。
 
-### 面试表达重点
+### 设计取舍
 
-可以直接这样讲：这个项目不是只调 LLM API，而是把代码文件清洗切块、向量化、混合召回、上下文扩展、生成回答、Agent 工具调用、错误追踪和评估闭环串起来。对幻觉的约束不是靠“提示词相信模型”，而是通过引用来源、检索评估、生成质量评估和失败事件把回答变成可检查结果。
+这个项目不是只调 LLM API，而是把代码文件清洗切块、向量化、混合召回、上下文扩展、生成回答、Agent 工具调用、错误追踪和评估闭环串起来。对幻觉的约束不是依赖单一提示词，而是通过引用来源、检索评估、生成质量评估和失败事件把回答变成可检查结果。

@@ -154,7 +154,7 @@ function App() {
           <div className="brand-mark"><Bot size={22} /></div>
           <div>
             <h1>代码库智能分析控制台</h1>
-            <p>RAG 检索、Agent 工具轨迹、生成评估一体化演示</p>
+            <p>RAG 检索、Agent 工具轨迹、生成评估一体化控制台</p>
           </div>
         </div>
         <label className="api-field">
@@ -204,7 +204,7 @@ function App() {
       <section className="architecture-strip">
         <img src="/assets/architecture-strip.svg" alt="Codebase Agent 架构流程" />
         <div>
-          <h2>面试演示口径</h2>
+          <h2>系统能力概览</h2>
           <p>从文件快照进入系统，先做 chunk 与检索，再进入回答生成或 Agent 工具循环；所有结果都有来源、事件、错误和评估证据。</p>
         </div>
       </section>
@@ -306,7 +306,7 @@ function ChatPanel({ baseUrl, filesText }) {
 
 function AgentPanel({ baseUrl, filesText }) {
   const [question, setQuestion] = useState("帮我找出数据库连接相关代码，并说明失败时怎么处理");
-  const [sessionId, setSessionId] = useState("demo-session");
+  const [sessionId, setSessionId] = useState("default-session");
   const [maxSteps, setMaxSteps] = useState(5);
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");

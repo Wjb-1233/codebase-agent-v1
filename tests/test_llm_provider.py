@@ -6,7 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from codebase_agent.exceptions import ConfigError, LLMError
-from codebase_agent.rag.llm import FakeLLMProvider, OpenAILLMProvider
+from codebase_agent.rag.llm import OpenAILLMProvider
+from tests.fakes import FakeLLMProvider
 
 
 def test_fake_llm_returns_fixed_response():

@@ -231,7 +231,7 @@ class GenerationEvalResult:
 def evaluate_generation(case: GenerationEvalCase) -> GenerationEvalResult:
     """评估 RAG 答案是否有上下文支撑，并且是否回答了问题。
 
-    这里刻意避免网络调用，让 CI 和演示都可复现。它近似两个常见 RAGAS 维度：
+    这里刻意避免网络调用，让 CI 和本地验收都可复现。它近似两个常见 RAGAS 维度：
     - faithfulness：答案里的说法应该能被检索上下文支撑。
     - answer_relevance：答案应该覆盖问题和期望关键词。
     """
