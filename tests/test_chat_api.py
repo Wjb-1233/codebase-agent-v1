@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 import codebase_agent.backend.main as main_module
 from codebase_agent.backend.main import app, get_embedding_provider, get_llm_provider
 from codebase_agent.exceptions import ConfigError, EmbeddingError, LLMError
+from codebase_agent.rag.evaluator import GenerationEvalResult
 
 client = TestClient(app)
 
@@ -16,6 +17,7 @@ client = TestClient(app)
 def clear_overrides(monkeypatch):
     monkeypatch.delenv("RERANKER_ENABLED", raising=False)
     monkeypatch.delenv("RERANKER_PROVIDER", raising=False)
+    monkeypatch.delenv("GENERATION_EVALUATOR", raising=False)
     main_module._reranker = None
     yield
     app.dependency_overrides.clear()
@@ -312,6 +314,42 @@ def test_generation_evaluation_api_scores_grounded_answer():
 
     assert resp.status_code == 200
     data = resp.json()
+    assert data["evaluator"] == "heuristic"
     assert data["faithfulness"] >= 0.6
     assert data["answer_relevance"] >= 0.5
     assert data["missing_keywords"] == []
+
+
+def test_generation_evaluation_api_can_use_llm_judge(monkeypatch):
+    monkeypatch.setenv("GENERATION_EVALUATOR", "llm_judge")
+
+    def fake_llm_judge(case):
+        return GenerationEvalResult(
+            question=case.question,
+            faithfulness=0.91,
+            answer_relevance=0.86,
+            passed=True,
+            unsupported_claims=[],
+            missing_keywords=[],
+            notes="线上模型评审通过",
+            evaluator="llm_judge",
+        )
+
+    monkeypatch.setattr(main_module, "evaluate_generation_with_llm_judge", fake_llm_judge)
+
+    resp = client.post(
+        "/evaluate/generation",
+        json={
+            "question": "数据库连接在哪里实现？",
+            "answer": "数据库连接在 get_engine 中实现。",
+            "contexts": ["def get_engine(database_url): return create_engine(database_url)"],
+            "expected_keywords": ["get_engine"],
+        },
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["evaluator"] == "llm_judge"
+    assert data["faithfulness"] == 0.91
+    assert data["answer_relevance"] == 0.86
+    assert data["notes"] == "线上模型评审通过"

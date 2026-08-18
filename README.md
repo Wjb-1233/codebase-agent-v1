@@ -412,6 +412,8 @@ EMBEDDING_API_KEY=your_embedding_api_key_here
 EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
 EMBEDDING_MODEL=BAAI/bge-m3
 LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+GENERATION_EVALUATOR=heuristic
+LLM_JUDGE_MODEL=
 ```
 
 `OPENAI_*` 用于 Chat/Agent，可以接 DeepSeek 或 OpenAI 兼容服务；`EMBEDDING_*` 单独用于外部 Embedding，避免把向量请求发到不支持 Embedding 的 Chat 服务。`EMBEDDING_PROVIDER=openai` 适合生产或有稳定 OpenAI 兼容 Embeddings 服务的环境；`EMBEDDING_PROVIDER=local` 使用本地 sentence-transformers，适合离线或内网环境。测试默认使用假的 embedding/LLM 提供器，不请求真实外部 API；`InMemoryVectorStore` 的余弦相似度、Top-K 排序、metadata、Prompt 构建、LLM 失败和 `/chat` 响应链路已经有测试覆盖。
@@ -472,8 +474,10 @@ LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ### 生成质量评估
 
 - 检索质量使用 Hit@K / MRR 评估，定位召回是否命中目标文件。
-- 生成质量新增 `/evaluate/generation`，离线评估忠实度、答案相关性、无证据支撑内容和缺失关键词。
-- 评估默认不依赖真实 API key，适合 CI、本地验收和回归检查。
+- 生成质量接口 `/evaluate/generation` 输出忠实度、答案相关性、无证据支撑内容和缺失关键词。
+- 默认 `GENERATION_EVALUATOR=heuristic`，使用离线规则评估，适合 CI、本地验收和回归检查。
+- 演示或真实质量验收可设置 `GENERATION_EVALUATOR=llm_judge`，接口会调用线上模型做 LLM 评审；`LLM_JUDGE_MODEL` 为空时复用 `OPENAI_CHAT_MODEL`。
+- API 返回 `evaluator` 字段，可直接看出本次使用的是 `heuristic` 还是 `llm_judge`。
 
 ---
 

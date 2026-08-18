@@ -9,13 +9,16 @@ from codebase_agent.rag.evaluator import (
     ComparisonResult,
     EvalCase,
     GenerationEvalCase,
+    LLMJudgeGenerationEvaluator,
     compare_retrieval,
     evaluate_generation,
     hit_at_k,
     reciprocal_rank,
     run_evaluation,
 )
+from codebase_agent.exceptions import LLMError
 from scripts.evaluate_rag import load_cases
+from tests.fakes import FakeLLMProvider
 
 
 def _fake_embed(texts: list[str]) -> list[list[float]]:
@@ -253,3 +256,38 @@ def test_evaluate_generation_matches_chinese_expected_keyword():
     assert result.missing_keywords == []
     assert result.faithfulness == 1.0
     assert result.answer_relevance >= 0.5
+
+
+def test_llm_judge_generation_evaluator_parses_structured_result():
+    case = GenerationEvalCase(
+        question="数据库连接在哪里实现？",
+        answer="数据库连接在 get_engine 中实现。",
+        contexts=["def get_engine(database_url): return create_engine(database_url)"],
+        expected_keywords=["get_engine"],
+    )
+    fake_llm = FakeLLMProvider(
+        '{"faithfulness": 0.92, "answer_relevance": 0.88, '
+        '"unsupported_claims": [], "missing_keywords": [], '
+        '"notes": "答案有证据支撑"}'
+    )
+
+    result = LLMJudgeGenerationEvaluator(llm=fake_llm).evaluate(case)
+
+    assert result.evaluator == "llm_judge"
+    assert result.passed is True
+    assert result.faithfulness == 0.92
+    assert result.answer_relevance == 0.88
+    assert result.notes == "答案有证据支撑"
+    assert "只根据给定证据" in fake_llm.last_prompt
+
+
+def test_llm_judge_generation_evaluator_rejects_invalid_json():
+    case = GenerationEvalCase(
+        question="数据库连接在哪里实现？",
+        answer="数据库连接在 get_engine 中实现。",
+        contexts=["def get_engine(database_url): return create_engine(database_url)"],
+    )
+    fake_llm = FakeLLMProvider("这不是 JSON")
+
+    with pytest.raises(LLMError, match="JSON"):
+        LLMJudgeGenerationEvaluator(llm=fake_llm).evaluate(case)

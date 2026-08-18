@@ -36,7 +36,11 @@ from codebase_agent.rag.keyword_search import KeywordIndex
 from codebase_agent.rag.reranker import CrossEncoderReranker, IdentityReranker
 from codebase_agent.rag.parent_document import attach_parent_metadata, build_parent_map, expand_with_parents
 from codebase_agent.rag.qdrant_store import QdrantVectorStore, VectorStoreError
-from codebase_agent.rag.evaluator import GenerationEvalCase, evaluate_generation
+from codebase_agent.rag.evaluator import (
+    GenerationEvalCase,
+    evaluate_generation,
+    evaluate_generation_with_llm_judge,
+)
 from codebase_agent.agent.memory_store import AgentMemoryStore
 from codebase_agent.agent.runner import AgentModelProvider, AgentRunResult, AgentToolCall, run_agent as _run_agent
 from codebase_agent.agent.model import OpenAIAgentProvider
@@ -541,6 +545,7 @@ class GenerationEvaluationRequest(BaseModel):
 
 class GenerationEvaluationResponse(BaseModel):
     question: str
+    evaluator: str
     faithfulness: float
     answer_relevance: float
     passed: bool
@@ -551,16 +556,29 @@ class GenerationEvaluationResponse(BaseModel):
 
 @app.post("/evaluate/generation", response_model=GenerationEvaluationResponse)
 def evaluate_generation_api(request: GenerationEvaluationRequest) -> GenerationEvaluationResponse:
-    result = evaluate_generation(
-        GenerationEvalCase(
-            question=request.question,
-            answer=request.answer,
-            contexts=request.contexts,
-            expected_keywords=request.expected_keywords,
-        )
+    case = GenerationEvalCase(
+        question=request.question,
+        answer=request.answer,
+        contexts=request.contexts,
+        expected_keywords=request.expected_keywords,
     )
+    evaluator_mode = _generation_evaluator_mode()
+
+    try:
+        if evaluator_mode == "heuristic":
+            result = evaluate_generation(case)
+        elif evaluator_mode == "llm_judge":
+            result = evaluate_generation_with_llm_judge(case)
+        else:
+            raise HTTPException(status_code=500, detail=f"不支持的生成质量评估模式：{evaluator_mode}")
+    except ConfigError as exc:
+        raise HTTPException(status_code=500, detail="生成质量评估器配置错误") from exc
+    except LLMError as exc:
+        raise HTTPException(status_code=502, detail="生成质量评估器暂时不可用") from exc
+
     return GenerationEvaluationResponse(
         question=result.question,
+        evaluator=result.evaluator,
         faithfulness=result.faithfulness,
         answer_relevance=result.answer_relevance,
         passed=result.passed,
@@ -568,6 +586,20 @@ def evaluate_generation_api(request: GenerationEvaluationRequest) -> GenerationE
         missing_keywords=result.missing_keywords,
         notes=result.notes,
     )
+
+
+def _generation_evaluator_mode() -> str:
+    mode = os.getenv("GENERATION_EVALUATOR", "heuristic").strip().lower()
+    aliases = {
+        "": "heuristic",
+        "offline": "heuristic",
+        "rule": "heuristic",
+        "rules": "heuristic",
+        "llm-judge": "llm_judge",
+        "llm_judge": "llm_judge",
+        "online": "llm_judge",
+    }
+    return aliases.get(mode, mode)
 
 # ── Agent /agent/run ──
 

@@ -6,11 +6,16 @@
 
 from __future__ import annotations
 
+import json
+import os
+import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from codebase_agent.exceptions import LLMError
 from codebase_agent.rag.chunker import Chunk
 from codebase_agent.rag.embeddings import EmbeddingProvider
+from codebase_agent.rag.llm import LLMProvider, OpenAILLMProvider
 from codebase_agent.rag.vector_store import search_code
 
 if TYPE_CHECKING:
@@ -207,7 +212,7 @@ def compare_retrieval(
 
 @dataclass(frozen=True)
 class GenerationEvalCase:
-    """轻量、离线的生成质量评估样本。"""
+    """生成质量评估样本。"""
 
     question: str
     answer: str
@@ -217,7 +222,7 @@ class GenerationEvalCase:
 
 @dataclass(frozen=True)
 class GenerationEvalResult:
-    """不依赖外部 API 的 RAGAS 风格生成质量评估结果。"""
+    """RAGAS 风格生成质量评估结果。"""
 
     question: str
     faithfulness: float
@@ -226,6 +231,7 @@ class GenerationEvalResult:
     unsupported_claims: list[str]
     missing_keywords: list[str]
     notes: str = ""
+    evaluator: str = "heuristic"
 
 
 def evaluate_generation(case: GenerationEvalCase) -> GenerationEvalResult:
@@ -249,6 +255,7 @@ def evaluate_generation(case: GenerationEvalCase) -> GenerationEvalResult:
             unsupported_claims=[],
             missing_keywords=sorted(expected_terms),
             notes="空答案",
+            evaluator="heuristic",
         )
 
     answer_text = _normalize_text(case.answer)
@@ -286,7 +293,127 @@ def evaluate_generation(case: GenerationEvalCase) -> GenerationEvalResult:
         unsupported_claims=unsupported_terms[:20],
         missing_keywords=missing_keywords,
         notes=notes,
+        evaluator="heuristic",
     )
+
+
+class LLMJudgeGenerationEvaluator:
+    """使用线上模型评审 RAG 生成质量。"""
+
+    def __init__(
+        self,
+        llm: LLMProvider | None = None,
+        *,
+        faithfulness_threshold: float = 0.75,
+        relevance_threshold: float = 0.7,
+    ) -> None:
+        model = os.getenv("LLM_JUDGE_MODEL") or None
+        self.llm = llm or OpenAILLMProvider(model=model)
+        self.faithfulness_threshold = faithfulness_threshold
+        self.relevance_threshold = relevance_threshold
+
+    def evaluate(self, case: GenerationEvalCase) -> GenerationEvalResult:
+        if not case.answer.strip():
+            return evaluate_generation(case)
+
+        payload = self._parse_json(self.llm.generate(_build_generation_judge_prompt(case)))
+        faithfulness = _clamp_score(payload.get("faithfulness"))
+        answer_relevance = _clamp_score(payload.get("answer_relevance"))
+        unsupported_claims = _string_list(payload.get("unsupported_claims"))
+        missing_keywords = _string_list(payload.get("missing_keywords"))
+        notes = str(payload.get("notes") or "").strip() or "线上模型评审完成"
+        passed = (
+            faithfulness >= self.faithfulness_threshold
+            and answer_relevance >= self.relevance_threshold
+            and not unsupported_claims
+            and not missing_keywords
+        )
+
+        return GenerationEvalResult(
+            question=case.question,
+            faithfulness=round(faithfulness, 4),
+            answer_relevance=round(answer_relevance, 4),
+            passed=passed,
+            unsupported_claims=unsupported_claims[:20],
+            missing_keywords=missing_keywords,
+            notes=notes,
+            evaluator="llm_judge",
+        )
+
+    @staticmethod
+    def _parse_json(raw_text: str) -> dict[str, object]:
+        match = re.search(r"\{.*\}", raw_text, flags=re.DOTALL)
+        if not match:
+            raise LLMError("生成质量评审未返回 JSON")
+        try:
+            data = json.loads(match.group(0))
+        except json.JSONDecodeError as exc:
+            raise LLMError("生成质量评审返回的 JSON 无效") from exc
+        if not isinstance(data, dict):
+            raise LLMError("生成质量评审返回结构无效")
+        return data
+
+
+def evaluate_generation_with_llm_judge(
+    case: GenerationEvalCase,
+    llm: LLMProvider | None = None,
+) -> GenerationEvalResult:
+    """调用线上模型进行生成质量评审。"""
+    return LLMJudgeGenerationEvaluator(llm=llm).evaluate(case)
+
+
+def _build_generation_judge_prompt(case: GenerationEvalCase) -> str:
+    contexts = "\n\n".join(f"[证据 {index + 1}]\n{context}" for index, context in enumerate(case.contexts))
+    keywords = ", ".join(case.expected_keywords) if case.expected_keywords else "无"
+    return f"""你是 RAG 生成质量评审员。请只根据给定证据评估答案，不要补充外部知识。
+
+评分维度：
+1. faithfulness：答案中的关键事实是否都能被证据支撑，0 到 1。
+2. answer_relevance：答案是否直接回答用户问题并覆盖期望关键词，0 到 1。
+
+判定要求：
+- 如果答案出现证据中没有的关键事实，把这些内容写入 unsupported_claims。
+- 如果期望关键词没有被答案覆盖，把这些词写入 missing_keywords。
+- 不要因为答案更长就给高分。
+- 只返回一个 JSON 对象，不要 Markdown，不要解释正文。
+
+JSON 格式：
+{{
+  "faithfulness": 0.0,
+  "answer_relevance": 0.0,
+  "unsupported_claims": [],
+  "missing_keywords": [],
+  "notes": "一句中文评审结论"
+}}
+
+用户问题：
+{case.question}
+
+期望关键词：
+{keywords}
+
+检索证据：
+{contexts or "无"}
+
+待评估答案：
+{case.answer}
+"""
+
+
+def _clamp_score(value: object) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError) as exc:
+        raise LLMError("生成质量评审分数无效") from exc
+    return min(1.0, max(0.0, score))
+
+
+def _string_list(value: object) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise LLMError("生成质量评审列表字段无效")
+    return [str(item).strip() for item in value if str(item).strip()]
 
 
 def evaluate_generation_batch(cases: list[GenerationEvalCase]) -> dict[str, object]:
