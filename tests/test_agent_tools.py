@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from codebase_agent.agent.executor import dispatch, get_registry, validate_args, check_path_safety
-from codebase_agent.agent.models import ToolResult, ToolEvent
+from codebase_agent.agent.tool_contracts import ToolResult, ToolEvent
 from codebase_agent.agent.router import route
 from codebase_agent.agent.tools import get_file_content, list_files, search_code
 from codebase_agent.exceptions import EmbeddingError

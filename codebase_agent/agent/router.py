@@ -1,4 +1,4 @@
-﻿"""确定性路由基线 —— 按规则匹配用户意图到对应工具。
+"""确定性路由基线 —— 按规则匹配用户意图到对应工具。
 
 当前阶段：可测试的规则路由，不依赖大模型。
 后续演进：可替换为 LangGraph 或模型 Tool Calling 路由节点。
@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 
-from codebase_agent.agent.models import RouterResult
+from codebase_agent.agent.tool_contracts import RouterResult
 
 
 # 意图模式（按优先级：list_files → get_file_content → search_code）

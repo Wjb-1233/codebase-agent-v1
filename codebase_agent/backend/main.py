@@ -43,7 +43,7 @@ from codebase_agent.rag.evaluator import (
 )
 from codebase_agent.agent.memory_store import AgentMemoryStore
 from codebase_agent.agent.runner import AgentModelProvider, AgentRunResult, AgentToolCall, run_agent as _run_agent
-from codebase_agent.agent.model import OpenAIAgentProvider
+from codebase_agent.agent.llm_provider import OpenAIAgentProvider
 
 app = FastAPI()
 

@@ -93,7 +93,8 @@ codebase-agent/
 │   ├── agent/
 │   │   ├── runner.py             # Agent 主循环
 │   │   ├── tools.py              # list_files / get_file_content / search_code
-│   │   ├── model.py              # OpenAI/测试假模型 Agent 封装
+│   │   ├── llm_provider.py       # Agent 调用 OpenAI 兼容模型
+│   │   ├── tool_contracts.py     # Agent 工具结果、事件和路由数据结构
 │   │   └── memory_store.py       # 会话记忆持久化
 │   ├── code_graph.py             # 多语言静态代码结构图
 │   ├── exceptions.py            # 自定义异常（网络错误 / 限流错误等）

@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Callable
 
-from codebase_agent.agent.models import ToolDefinition, ToolEvent, ToolResult
+from codebase_agent.agent.tool_contracts import ToolDefinition, ToolEvent, ToolResult
 
 
 # ── 注册表 ──

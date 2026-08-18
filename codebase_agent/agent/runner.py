@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 from codebase_agent.agent.executor import dispatch
 from codebase_agent.agent.memory import ConversationTurn, build_short_term_context
-from codebase_agent.agent.models import ToolEvent, ToolResult
+from codebase_agent.agent.tool_contracts import ToolEvent, ToolResult
 from codebase_agent.rag.chunker import Chunk
 from codebase_agent.rag.embeddings import EmbeddingProvider
 from codebase_agent.rag.vector_store import SearchResult
