@@ -100,7 +100,7 @@ def run_evaluation(
             hit = hit_at_k(case.expected_file, retrieved_files, case.top_k)
             failure_reason = None
             if not hit:
-                failure_reason = f"expected file not retrieved in top {case.top_k}"
+                failure_reason = f"期望文件未出现在前 {case.top_k} 个检索结果中"
 
             results.append(
                 EvalResult(
@@ -113,7 +113,7 @@ def run_evaluation(
                 )
             )
         except Exception as exc:
-            reason = f"{type(exc).__name__}: {exc}"
+            reason = f"检索执行失败（{type(exc).__name__}）: {exc}"
             results.append(_failed_result(case, reason))
 
     total = len(results)

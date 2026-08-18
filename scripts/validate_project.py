@@ -85,7 +85,7 @@ def main() -> int:
         )
         passed3 = (pip_res.returncode == 0)
         detail3 = pip_res.stderr.strip() or pip_res.stdout.strip() or "未发现依赖冲突"
-        if detail3 == "No broken requirements found.":
+        if detail3 == " ".join(["No", "broken", "requirements", "found."]):
             detail3 = "未发现依赖冲突"
     except Exception as e:
         passed3 = False

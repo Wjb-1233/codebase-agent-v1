@@ -52,7 +52,7 @@ def load_cases(json_path: Path) -> list[EvalCase]:
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:
-            question = f"<invalid case #{index}>"
+            question = f"<第 {index} 条无效样本>"
             if isinstance(item, dict) and isinstance(item.get("question"), str):
                 question = item["question"] or question
             cases.append(

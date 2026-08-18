@@ -98,12 +98,12 @@ def test_run_evaluation_mixed(chunks: list[Chunk]):
     assert len(result["failed_samples"]) == 1
     failed = result["failed_samples"][0]
     assert failed.expected_file == "chunker.py"
-    assert failed.failure_reason == "expected file not retrieved in top 2"
+    assert failed.failure_reason == "期望文件未出现在前 2 个检索结果中"
 
 
 def test_invalid_case_does_not_stop_valid_case(chunks: list[Chunk]):
     cases = [
-        EvalCase("broken", "", top_k=0, validation_error="missing expected_file"),
+        EvalCase("broken", "", top_k=0, validation_error="缺少 expected_file"),
         EvalCase("how to connect database", "db.py", top_k=2),
     ]
 
@@ -112,7 +112,7 @@ def test_invalid_case_does_not_stop_valid_case(chunks: list[Chunk]):
     assert result["total"] == 2
     assert result["hit_count"] == 1
     assert result["hit_at_k"] == 0.5
-    assert result["failed_samples"][0].failure_reason == "missing expected_file"
+    assert result["failed_samples"][0].failure_reason == "缺少 expected_file"
 
 
 def test_embedding_count_error_is_recorded(chunks: list[Chunk]):
@@ -131,7 +131,7 @@ def test_embedding_count_error_is_recorded(chunks: list[Chunk]):
     assert result["hit_count"] == 0
     assert len(result["failed_samples"]) == 1
     assert result["failed_samples"][0].failure_reason == (
-        "ValueError: chunks 和 vectors 数量必须一致"
+        "检索执行失败（ValueError）: chunks 和 vectors 数量必须一致"
     )
 
 
@@ -141,7 +141,7 @@ def test_load_cases_keeps_malformed_sample(tmp_path: Path):
         json.dumps(
             [
                 {"question": "connect database", "expected_file": "db.py", "top_k": 2},
-                {"question": "missing expected file"},
+                {"question": "缺少期望文件"},
             ]
         ),
         encoding="utf-8",

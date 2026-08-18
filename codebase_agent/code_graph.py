@@ -174,7 +174,7 @@ def _analyze_python_file(
     try:
         tree = ast.parse(content)
     except SyntaxError as exc:
-        return [], [], f"SyntaxError: {exc.msg} at line {exc.lineno or 0}"
+        return [], [], f"语法错误: {exc.msg}，行号: {exc.lineno or 0}"
 
     symbols = _extract_symbols(file_path, tree)
     imports = _extract_imports(file_path, tree, known_modules)

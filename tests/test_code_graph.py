@@ -56,7 +56,7 @@ def test_build_code_graph_keeps_parse_errors_structured():
     )
 
     assert graph.summary["parse_errors"] == 1
-    assert graph.files[0].parse_error.startswith("SyntaxError:")
+    assert graph.files[0].parse_error.startswith("语法错误:")
     assert any(node.id == "file:broken.py" for node in graph.nodes)
 
 
