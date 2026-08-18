@@ -543,6 +543,7 @@ function EvaluationPanel({ baseUrl }) {
           <ScoreCard title="忠实度" value={result.faithfulness} />
           <ScoreCard title="答案相关性" value={result.answer_relevance} />
           <ScoreCard title="是否通过" value={result.passed ? "通过" : "未通过"} />
+          <ScoreCard title="评估器" value={formatEvaluator(result.evaluator)} />
           <article className="answer-card wide">
             <div className="card-label"><AlertTriangle size={16} />待检查项</div>
             <p>无证据支撑内容: {(result.unsupported_claims || []).join(", ") || "无"}</p>
@@ -615,6 +616,14 @@ function formatBackend(value) {
     qdrant: "Qdrant",
   };
   return map[value] || value;
+}
+
+function formatEvaluator(value) {
+  const map = {
+    heuristic: "离线规则",
+    llm_judge: "线上模型评审",
+  };
+  return map[value] || value || "未返回";
 }
 
 function formatLanguage(value) {
