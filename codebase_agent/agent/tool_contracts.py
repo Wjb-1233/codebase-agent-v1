@@ -58,13 +58,3 @@ class ToolDefinition:
     parameters: dict[str, dict[str, object]] = field(default_factory=dict)
     required_params: list[str] = field(default_factory=list)
     function: Callable[..., object] | None = None
-
-
-@dataclass(frozen=True)
-class RouterResult:
-    """路由器的输出：选择了哪个工具、什么参数、为什么这样选。"""
-
-    tool_name: str
-    arguments: dict[str, object]
-    reason: str = ""
-    is_direct_answer: bool = False

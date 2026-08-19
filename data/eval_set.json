@@ -13,7 +13,7 @@
   {"question": "How does POST /search convert raw search results into SearchResultItem objects?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
   {"question": "How does the /chat endpoint handle errors from embedding and LLM providers?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
   {"question": "What metadata fields does InMemoryVectorStore store for each chunk?", "expected_file": "codebase_agent/rag/vector_store.py", "top_k": 5},
-  {"question": "How does the code analyzer extract symbols from Python source files?", "expected_file": "codebase_agent/code_analyzer.py", "top_k": 5},
+  {"question": "How does the code graph extract symbols and imports from source files?", "expected_file": "codebase_agent/code_graph.py", "top_k": 5},
   {"question": "What validation does ChatRequest perform on the question field?", "expected_file": "codebase_agent/backend/main.py", "top_k": 5},
   {"question": "How does OpenAIEmbeddingProvider handle missing or invalid API keys?", "expected_file": "codebase_agent/rag/embeddings.py", "top_k": 5},
   {"question": "What chunk_id format does the chunker generate for each chunk?", "expected_file": "codebase_agent/rag/chunker.py", "top_k": 5},

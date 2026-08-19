@@ -1,6 +1,6 @@
 """Agent 工具层单元测试。
 
-覆盖：list_files / get_file_content / search_code / executor 成功 / executor 失败 / router / 安全 / 脱敏。
+覆盖：list_files / get_file_content / search_code / executor 成功 / executor 失败 / 安全 / 脱敏。
 """
 
 from unittest.mock import MagicMock
@@ -9,7 +9,6 @@ import pytest
 
 from codebase_agent.agent.executor import dispatch, get_registry, validate_args, check_path_safety
 from codebase_agent.agent.tool_contracts import ToolResult, ToolEvent
-from codebase_agent.agent.router import route
 from codebase_agent.agent.tools import get_file_content, list_files, search_code
 from codebase_agent.exceptions import EmbeddingError
 from codebase_agent.rag.chunker import Chunk
@@ -278,62 +277,7 @@ class TestExecutorFailure:
         assert "未知参数" in result.error_message
 
 
-# ═══════════════════════ 6. 路由测试 ═══════════════════════
-
-class TestRouter:
-    def test_route_list_files(self):
-        cases = [
-            "项目有哪些 Python 文件",
-            "列出所有代码文件",
-            "看看项目结构",
-        ]
-        for q in cases:
-            r = route(q)
-            assert r.tool_name == "list_files", f"Failed for: {q}"
-
-    def test_route_get_file_content(self):
-        cases = [
-            "打开 backend/main.py",
-            "读取 utils.py 的内容",
-            "看看 client.py",
-        ]
-        for q in cases:
-            r = route(q)
-            assert r.tool_name == "get_file_content", f"Failed for: {q}"
-            if "utils.py" in q:
-                assert r.arguments["path"] == "utils.py"
-
-    def test_route_search_code(self):
-        cases = [
-            "认证逻辑在哪",
-            "数据库连接怎么实现的",
-            "FastAPI 路由在哪里定义",
-            "代码分析",
-        ]
-        for q in cases:
-            r = route(q)
-            assert r.tool_name == "search_code", f"Failed for: {q}"
-            assert "top_k" in r.arguments
-
-    def test_route_greeting_to_direct_answer(self):
-        for q in ["你好", "hi", "早上好"]:
-            r = route(q)
-            assert r.tool_name == "direct_answer"
-            assert r.is_direct_answer is True
-
-    def test_route_empty_to_direct_answer(self):
-        r = route("")
-        assert r.tool_name == "direct_answer"
-        assert r.is_direct_answer is True
-
-    def test_route_unknown_to_direct_answer(self):
-        """不匹配任何工具时兜底到 direct_answer。"""
-        r = route("What is the capital of France")
-        assert r.tool_name == "direct_answer"
-        assert r.is_direct_answer is True
-
-
-# ═══════════════════════ 7. 事件脱敏 ═══════════════════════
+# ═══════════════════════ 6. 事件脱敏 ═══════════════════════
 
 class TestEventSanitization:
     def test_event_does_not_leak_full_file_content(self, project_dir):

@@ -66,6 +66,11 @@ flowchart LR
 - `GET /health` — 健康检查
 - `POST /analyze` — 提交 GitHub 仓库地址，拉取文件列表并记录分析历史
 - `GET /history?limit=20` — 查看最近分析记录
+- `POST /search` — 对请求中的代码文件做切块、向量化和 Top-K 检索
+- `POST /chat` — 基于检索结果生成带引用来源的 RAG 回答
+- `POST /chat/stream` — 基于 SSE 返回流式 RAG 回答
+- `POST /agent/run` — 让 Agent 调用列文件、读文件、搜代码等工具完成代码库分析
+- `POST /evaluate/generation` — 评估回答的忠实度、相关性和无证据支撑内容
 - `POST /code-graph` — 基于请求文件快照做多语言静态结构分析，返回文件、符号和 import 依赖图
 
 ---
@@ -94,7 +99,7 @@ codebase-agent/
 │   │   ├── runner.py             # Agent 主循环
 │   │   ├── tools.py              # list_files / get_file_content / search_code
 │   │   ├── llm_provider.py       # Agent 调用 OpenAI 兼容模型
-│   │   ├── tool_contracts.py     # Agent 工具结果、事件和路由数据结构
+│   │   ├── tool_contracts.py     # Agent 工具定义、结果和事件数据结构
 │   │   └── memory_store.py       # 会话记忆持久化
 │   ├── code_graph.py             # 多语言静态代码结构图
 │   ├── exceptions.py            # 自定义异常（网络错误 / 限流错误等）
@@ -437,9 +442,9 @@ LLM_JUDGE_MODEL=
 | 命中数 | 20 |
 | Hit@1 | **0.800** |
 | Hit@5 | **1.000** |
-| MRR | **0.888** |
+| MRR | **0.900** |
 | Embedding 模型 | BAAI/bge-m3（通过 SiliconFlow 调用） |
-| Chunk 总数 | 81 |
+| Chunk 总数 | 243 |
 
 ### Top-1 失败案例（Hit@5=1 但首位未命中）
 
@@ -447,18 +452,18 @@ LLM_JUDGE_MODEL=
 
 | # | 问题 | 期望文件 | 实际排名 | RR |
 |---|------|---------|---------|-----|
-| 1 | “项目定义了哪些 FastAPI 路由？” | `backend/main.py` | 第4位 | 0.25 |
-| 2 | “Embedding 提供器使用什么模型？” | `rag/embeddings.py` | 第2位 | 0.50 |
-| 3 | “GitHub 客户端如何处理 API 错误？” | `backend/github_client.py` | 第2位 | 0.50 |
-| 4 | “代码分析器如何提取符号？” | `codebase_agent/code_analyzer.py` | 第2位 | 0.50 |
+| 1 | “LLM 提供器如何生成回答并处理错误？” | `codebase_agent/rag/llm.py` | 第2位 | 0.50 |
+| 2 | “数据库模块如何初始化和管理 SQLite 连接？” | `codebase_agent/backend/database.py` | 第2位 | 0.50 |
+| 3 | “GitHub 客户端如何处理 API 错误？” | `codebase_agent/backend/github_client.py` | 第2位 | 0.50 |
+| 4 | “search_code 如何校验检索参数？” | `codebase_agent/rag/vector_store.py` | 第2位 | 0.50 |
 
-**案例 1 分析**：问 FastAPI 路由时，`github_client.py` 排在 `main.py` 前面。可能原因是这些文件也包含网络/请求相关模式，与 query 的语义产生部分匹配。
+**案例 1 分析**：问 LLM 错误处理时，`main.py` 排在 `llm.py` 前面。原因是 API 层也包含 provider 调用和异常捕获，语义上接近“生成回答并处理错误”。
 
-**案例 2 分析**：问 embedding 模型时，`main.py` 排第一（因为其中引用了 `OpenAIEmbeddingProvider`），而 `embeddings.py`（定义本身）排第二。chunk 粒度和引用链影响了排序。
+**案例 2 分析**：问数据库连接时，`memory_store.py` 排在 `database.py` 前面。两个文件都包含 SQLite 连接、建表和持久化语义，说明同类基础设施模块之间仍有排序竞争。
 
 **案例 3 分析**：问错误处理时，`exceptions.py`（定义异常类）排在 `github_client.py`（使用异常类）前面。表明错误处理语义更接近定义侧而非使用侧。
 
-**案例 4 分析**：问符号提取时，`chunker.py` 的代码切分语义排在 `codebase_agent/code_analyzer.py` 前面，说明相近模块之间仍存在语义混淆。
+**案例 4 分析**：问工具检索参数校验时，`agent/tools.py` 排在 `vector_store.py` 前面。原因是 Agent 工具层负责接收用户参数，向量库负责执行检索，两侧语义都与参数校验相关。
 
 ### 改进方向
 

@@ -148,6 +148,8 @@ def main() -> int:
                 "hit_at_1": result["hit_at_1"],
                 "hit_at_k": result["hit_at_k"],
                 "mrr": result["mrr"],
+                "chunk_count": len(all_chunks),
+                "embedding_model": provider.model,
                 "all_results": [
                     {
                         "question": r.question[:80],

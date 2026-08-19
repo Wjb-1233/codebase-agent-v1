@@ -3,7 +3,9 @@
   "hit_count": 20,
   "hit_at_1": 0.8,
   "hit_at_k": 1.0,
-  "mrr": 0.8875,
+  "mrr": 0.9,
+  "chunk_count": 243,
+  "embedding_model": "BAAI/bge-m3",
   "all_results": [
     {
       "question": "How does the chunk_file function split code into chunks?",
@@ -20,11 +22,11 @@
       "question": "What embedding model does the OpenAIEmbeddingProvider use?",
       "expected_file": "codebase_agent/rag/embeddings.py",
       "hit": 1,
-      "reciprocal_rank": 0.5,
+      "reciprocal_rank": 1.0,
       "actual_top_files": [
-        "codebase_agent/backend/main.py",
         "codebase_agent/rag/embeddings.py",
-        "codebase_agent/rag/llm.py"
+        "codebase_agent/backend/main.py",
+        "codebase_agent/agent/llm_provider.py"
       ]
     },
     {
@@ -35,7 +37,7 @@
       "actual_top_files": [
         "codebase_agent/rag/vector_store.py",
         "codebase_agent/rag/vector_store.py",
-        "codebase_agent/rag/__init__.py"
+        "codebase_agent/rag/qdrant_store.py"
       ]
     },
     {
@@ -45,30 +47,29 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/rag/prompt_builder.py",
-        "codebase_agent/backend/main.py",
-        "codebase_agent/backend/main.py"
+        "codebase_agent/rag/evaluator.py",
+        "codebase_agent/rag/evaluator.py"
       ]
     },
     {
       "question": "How does the LLM provider generate responses and handle errors?",
       "expected_file": "codebase_agent/rag/llm.py",
       "hit": 1,
-      "reciprocal_rank": 1.0,
+      "reciprocal_rank": 0.5,
       "actual_top_files": [
-        "codebase_agent/rag/llm.py",
         "codebase_agent/backend/main.py",
-        "codebase_agent/rag/llm.py"
+        "codebase_agent/rag/llm.py",
+        "codebase_agent/rag/evaluator.py"
       ]
     },
     {
       "question": "What FastAPI routes are defined for search and chat?",
       "expected_file": "codebase_agent/backend/main.py",
       "hit": 1,
-      "reciprocal_rank": 0.25,
+      "reciprocal_rank": 1.0,
       "actual_top_files": [
-        "codebase_agent/backend/github_client.py",
-        "codebase_agent/exceptions.py",
-        "codebase_agent/backend/github_client.py",
+        "codebase_agent/backend/main.py",
+        "codebase_agent/backend/main.py",
         "codebase_agent/backend/main.py"
       ]
     },
@@ -76,9 +77,9 @@
       "question": "How does the database module initialize and manage SQLite connections?",
       "expected_file": "codebase_agent/backend/database.py",
       "hit": 1,
-      "reciprocal_rank": 1.0,
+      "reciprocal_rank": 0.5,
       "actual_top_files": [
-        "codebase_agent/backend/database.py",
+        "codebase_agent/agent/memory_store.py",
         "codebase_agent/backend/database.py",
         "codebase_agent/backend/database.py"
       ]
@@ -102,7 +103,7 @@
       "actual_top_files": [
         "codebase_agent/exceptions.py",
         "codebase_agent/backend/github_client.py",
-        "codebase_agent/exceptions.py"
+        "codebase_agent/backend/__init__.py"
       ]
     },
     {
@@ -112,8 +113,8 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/exceptions.py",
-        "codebase_agent/exceptions.py",
-        "codebase_agent/exceptions.py"
+        "codebase_agent/rag/qdrant_store.py",
+        "codebase_agent/agent/tool_contracts.py"
       ]
     },
     {
@@ -134,8 +135,8 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/backend/main.py",
-        "codebase_agent/rag/vector_store.py",
-        "codebase_agent/backend/main.py"
+        "codebase_agent/backend/main.py",
+        "codebase_agent/rag/parent_document.py"
       ]
     },
     {
@@ -146,7 +147,7 @@
       "actual_top_files": [
         "codebase_agent/backend/main.py",
         "codebase_agent/backend/main.py",
-        "codebase_agent/rag/llm.py"
+        "codebase_agent/backend/main.py"
       ]
     },
     {
@@ -156,19 +157,19 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/rag/vector_store.py",
-        "codebase_agent/rag/vector_store.py",
-        "codebase_agent/rag/__init__.py"
+        "codebase_agent/rag/qdrant_store.py",
+        "codebase_agent/rag/vector_store.py"
       ]
     },
     {
-      "question": "How does the code analyzer extract symbols from Python source files?",
-      "expected_file": "codebase_agent/code_analyzer.py",
+      "question": "How does the code graph extract symbols and imports from source files?",
+      "expected_file": "codebase_agent/code_graph.py",
       "hit": 1,
-      "reciprocal_rank": 0.5,
+      "reciprocal_rank": 1.0,
       "actual_top_files": [
-        "codebase_agent/rag/chunker.py",
-        "codebase_agent/code_analyzer.py",
-        "codebase_agent/__init__.py"
+        "codebase_agent/code_graph.py",
+        "codebase_agent/code_graph.py",
+        "codebase_agent/code_graph.py"
       ]
     },
     {
@@ -178,8 +179,8 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/backend/main.py",
-        "codebase_agent/backend/main.py",
-        "codebase_agent/backend/main.py"
+        "codebase_agent/rag/evaluator.py",
+        "codebase_agent/rag/evaluator.py"
       ]
     },
     {
@@ -189,7 +190,7 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/rag/embeddings.py",
-        "codebase_agent/backend/main.py",
+        "codebase_agent/agent/llm_provider.py",
         "codebase_agent/rag/llm.py"
       ]
     },
@@ -200,7 +201,7 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/rag/chunker.py",
-        "codebase_agent/rag/__init__.py",
+        "codebase_agent/rag/chunker.py",
         "codebase_agent/rag/chunker.py"
       ]
     },
@@ -208,11 +209,11 @@
       "question": "How does the search_code function validate input parameters before searching?",
       "expected_file": "codebase_agent/rag/vector_store.py",
       "hit": 1,
-      "reciprocal_rank": 1.0,
+      "reciprocal_rank": 0.5,
       "actual_top_files": [
+        "codebase_agent/agent/tools.py",
         "codebase_agent/rag/vector_store.py",
-        "codebase_agent/backend/main.py",
-        "codebase_agent/backend/main.py"
+        "codebase_agent/agent/executor.py"
       ]
     },
     {
@@ -222,7 +223,7 @@
       "reciprocal_rank": 1.0,
       "actual_top_files": [
         "codebase_agent/backend/main.py",
-        "codebase_agent/backend/github_client.py",
+        "codebase_agent/agent/executor.py",
         "codebase_agent/backend/main.py"
       ]
     }
