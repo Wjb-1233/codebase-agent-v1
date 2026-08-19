@@ -15,8 +15,13 @@ class PromptChunk(Protocol):
 def build_rag_prompt(
     question: str,
     chunks: Sequence[PromptChunk] | None,
+    history_context: str = "",
 ) -> str:
-    """把用户问题和检索到的 chunk 合成一个带证据约束的 prompt。"""
+    """把用户问题、可选的历史对话和检索到的 chunk 合成一个带证据约束的 prompt。
+
+    history_context 是已格式化的多轮对话文本（如 "[user]: ...\n[assistant]: ..."）。
+    为空时输出与旧版完全一致，保证无记忆场景的向后兼容。
+    """
     if not question.strip():
         raise ValueError("question 不能为空")
 
@@ -29,8 +34,12 @@ def build_rag_prompt(
         ]
         context = "\n\n".join(parts)
 
-    return f"""你是代码库问答助手，只能根据给出的代码片段回答问题。
+    history_section = ""
+    if history_context.strip():
+        history_section = f"\n=== 对话历史 ===\n{history_context.strip()}\n"
 
+    return f"""你是代码库问答助手，只能根据给出的代码片段回答问题。
+{history_section}
 === 代码参考 ===
 {context}
 

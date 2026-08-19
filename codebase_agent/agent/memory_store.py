@@ -16,6 +16,9 @@ from codebase_agent.agent.memory import ConversationTurn
 
 DEFAULT_AGENT_MEMORY_DB = "agent_memory.db"
 
+# 已执行过建表 DDL 的数据库路径（解析后的绝对路径），跨实例复用
+_initialized_paths: set[str] = set()
+
 
 class AgentMemoryStore:
     """基于 SQLite 的 Agent 会话记忆。"""
@@ -24,10 +27,12 @@ class AgentMemoryStore:
         self.db_path = db_path or os.getenv("AGENT_MEMORY_DB_PATH", DEFAULT_AGENT_MEMORY_DB)
 
     def init(self) -> None:
-        path = Path(self.db_path)
-        if path.parent != Path(""):
-            path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.db_path) as conn:
+        path = Path(self.db_path).resolve()
+        key = str(path)
+        if key in _initialized_paths:
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(str(path)) as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS agent_memory_turns (
@@ -46,6 +51,7 @@ class AgentMemoryStore:
                 """
             )
             conn.commit()
+        _initialized_paths.add(key)
 
     def list_turns(self, session_id: str, *, limit: int = 20) -> list[ConversationTurn]:
         session_id = _validate_session_id(session_id)
