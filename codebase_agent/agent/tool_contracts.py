@@ -44,6 +44,7 @@ class ToolEvent:
     output_summary: str | None = None
     success: bool = True
     error_type: str | None = None
+    error_message: str | None = None
     duration_ms: float = 0.0
     trace_id: str = ""
 

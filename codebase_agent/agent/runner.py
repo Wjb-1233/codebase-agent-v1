@@ -150,7 +150,7 @@ def run_agent(
         }
         if call_signature in previous_signatures:
             state.status = "partial"
-            state.errors.append("repeated_tool_call_blocked")
+            state.errors.append("检测到重复工具调用，已阻止无效循环")
             break
 
         state.tool_calls.append(
@@ -176,7 +176,7 @@ def run_agent(
         if not result.success:
             error_msg = result.error_type or "unknown_error"
             detail = result.error_message or ""
-            state.errors.append(f"{error_msg}: {detail}" if detail else error_msg)
+            state.errors.append(_format_error_for_user(error_msg, detail))
 
         state.step_count += 1
 
@@ -195,7 +195,7 @@ def run_agent(
     # 情况 B：超步数但尚未有答案
     if state.step_count >= max_steps and not state.answer:
         state.status = "partial"
-        state.errors.append("max_steps_exceeded")
+        state.errors.append("已达到最大执行步数，返回部分分析结果")
         if retrieved_chunks:
             state.answer = _build_partial_search_answer(retrieved_chunks)
 
@@ -209,7 +209,7 @@ def run_agent(
                 state.status = "completed"
         except Exception as exc:
             state.answer = ""
-            state.errors.append(f"answer_generation_failed: {exc}")
+            state.errors.append(f"答案生成失败：{exc}")
             if state.status != "partial":
                 state.status = "failed"
 
@@ -225,6 +225,19 @@ def run_agent(
         memory_used=state.memory_used,
         memory_turns=state.memory_turns,
     )
+
+
+def _format_error_for_user(error_type: str, detail: str = "") -> str:
+    messages = {
+        "unknown_tool": "模型选择了未注册工具",
+        "invalid_argument": "工具参数无效",
+        "permission_denied": "路径越权，已拒绝访问",
+        "tool_not_configured": "工具未绑定实现",
+        "FileNotFoundError": "文件不存在",
+        "unknown_error": "未知工具错误",
+    }
+    message = messages.get(error_type, "工具执行失败")
+    return f"{message}：{detail}" if detail else message
 
 
 def _build_partial_search_answer(retrieved_chunks: list[SearchResult]) -> str:

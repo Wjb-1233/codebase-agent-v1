@@ -265,7 +265,7 @@ function ChatPanel({ baseUrl, filesText }) {
             setBackend(data.vector_backend || "memory");
           }
           if (event === "error") {
-            setError(`${data.error_type}: ${data.detail}`);
+            setError(`${formatStreamError(data.error_type)}: ${data.detail}`);
           }
         });
       }
@@ -664,6 +664,14 @@ function formatMemoryScope(value) {
   return map[value] || value;
 }
 
+function formatStreamError(value) {
+  const map = {
+    config_error: "配置错误",
+    llm_error: "模型调用错误",
+  };
+  return map[value] || value || "未知错误";
+}
+
 function localizeTraceItem(value) {
   if (Array.isArray(value)) {
     return value.map(localizeTraceItem);
@@ -677,6 +685,7 @@ function localizeTraceItem(value) {
     reason: "原因",
     success: "是否成功",
     error_type: "错误类型",
+    error_message: "错误说明",
     duration_ms: "耗时毫秒",
     trace_id: "追踪 ID",
     query: "查询语句",
@@ -699,6 +708,14 @@ function localizeTraceValue(value) {
     search_code: "搜索代码",
     list_files: "列出文件",
     get_file_content: "读取文件内容",
+    unknown_tool: "未知工具",
+    invalid_argument: "参数无效",
+    permission_denied: "拒绝访问",
+    tool_not_configured: "工具未配置",
+    FileNotFoundError: "文件不存在",
+    repeated_tool_call_blocked: "重复工具调用已拦截",
+    max_steps_exceeded: "达到最大执行步数",
+    answer_generation_failed: "答案生成失败",
   };
   return map[String(value)] || value;
 }

@@ -631,6 +631,7 @@ class AgentEventItem(BaseModel):
     tool_name: str
     success: bool
     error_type: str | None = None
+    error_message: str | None = None
     duration_ms: float = 0.0
     trace_id: str = ""
 
@@ -768,6 +769,7 @@ async def agent_run(
             tool_name=ev.tool_name,
             success=ev.success,
             error_type=ev.error_type,
+            error_message=ev.error_message,
             duration_ms=ev.duration_ms,
             trace_id=ev.trace_id,
         )

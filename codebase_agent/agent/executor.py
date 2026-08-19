@@ -64,12 +64,12 @@ def check_path_safety(path: str, project_root: str) -> tuple[bool, str]:
     try:
         full = (root / path).resolve()
     except (ValueError, OSError):
-        return False, "[REDACTED: invalid path]"
+        return False, "[已脱敏: 无效路径]"
 
     try:
         full.relative_to(root)
     except ValueError:
-        return False, "[REDACTED: path_traversal]"
+        return False, "[已脱敏: 路径越权]"
 
     return True, path
 
@@ -128,6 +128,7 @@ def dispatch(
             input_summary=_summarize_input(arguments),
             success=False,
             error_type=error_type,
+            error_message=error_message or _default_error_message(error_type, tool_name),
             duration_ms=(time.time() - start_time) * 1000,
             trace_id=tid,
         )
@@ -150,14 +151,15 @@ def dispatch(
     if "path" in arguments and isinstance(arguments["path"], str):
         safe, _ = check_path_safety(str(arguments["path"]), project_root)
         if not safe:
-            event = _fail_event("permission_denied")
+            event = _fail_event("permission_denied", "路径越权，已拒绝访问")
             return ToolResult.fail("permission_denied", "路径越权——拒绝访问"), event
 
     # 4. 执行
     fn = tool_def.function
     if fn is None:
-        event = _fail_event("tool_not_configured")
-        return ToolResult.fail("tool_not_configured", f"工具 {tool_name} 未绑定实现"), event
+        msg = f"工具 {tool_name} 未绑定实现"
+        event = _fail_event("tool_not_configured", msg)
+        return ToolResult.fail("tool_not_configured", msg), event
 
     # 合并参数：arguments + project_root（仅对需要的工具注入）+ deps
     merged_args = dict(arguments)
@@ -187,10 +189,21 @@ def dispatch(
             input_summary=_summarize_input(arguments),
             success=False,
             error_type=error_type,
+            error_message=str(exc) or _default_error_message(error_type, tool_name),
             duration_ms=elapsed,
             trace_id=tid,
         )
         return ToolResult.fail(error_type, str(exc)), event
+
+
+def _default_error_message(error_type: str, tool_name: str) -> str:
+    messages = {
+        "unknown_tool": f"未知工具: {tool_name}",
+        "invalid_argument": "工具参数无效",
+        "permission_denied": "路径越权，已拒绝访问",
+        "tool_not_configured": f"工具 {tool_name} 未绑定实现",
+    }
+    return messages.get(error_type, "工具执行失败")
 
 
 # ── 启动时注册 ──

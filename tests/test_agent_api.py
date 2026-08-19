@@ -148,8 +148,10 @@ def test_agent_run_path_traversal_in_errors():
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["errors"]) >= 1
-    assert any("permission_denied" in e for e in data["errors"])
+    assert any("路径越权" in e for e in data["errors"])
     event = data["events"][0]
+    assert event["error_type"] == "permission_denied"
+    assert "路径越权" in event["error_message"]
     assert "../.env" not in str(event)
 
 
@@ -176,8 +178,10 @@ def test_agent_run_unknown_tool_in_errors():
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["errors"]) >= 1
-    assert any("unknown_tool" in e for e in data["errors"])
+    assert any("未注册工具" in e for e in data["errors"])
     assert data["events"][0]["success"] is False
+    assert data["events"][0]["error_type"] == "unknown_tool"
+    assert "未知工具" in data["events"][0]["error_message"]
 
 
 def test_agent_run_max_steps_exceeded():
@@ -214,7 +218,7 @@ def test_agent_run_max_steps_exceeded():
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "partial"
-    assert any("repeated_tool_call_blocked" in e for e in data["errors"])
+    assert any("重复工具调用" in e for e in data["errors"])
 
 
 # ═══════════════════════ 4. 多步链路 ═══════════════════════

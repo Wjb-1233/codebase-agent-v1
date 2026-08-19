@@ -304,7 +304,7 @@ class TestFailurePaths:
 
         assert result.status == "completed"
         assert len(result.errors) >= 1
-        assert any("permission_denied" in e for e in result.errors)
+        assert any("路径越权" in e for e in result.errors)
 
         # 事件摘要不暴露越权路径
         event = result.events[0]
@@ -333,7 +333,7 @@ class TestFailurePaths:
 
         assert result.status == "completed"
         assert len(result.errors) >= 1
-        assert any("unknown_tool" in e for e in result.errors)
+        assert any("未注册工具" in e for e in result.errors)
         assert not result.events[0].success
 
     def test_file_not_found_produces_error(self, project_dir, fake_embedding):
@@ -358,7 +358,7 @@ class TestFailurePaths:
 
         assert result.status == "completed"
         assert len(result.errors) >= 1
-        assert any("FileNotFoundError" in e for e in result.errors)
+        assert any("文件不存在" in e for e in result.errors)
 
     def test_repeated_tool_call_is_blocked(self, project_dir, fake_embedding):
         """模型重复调用相同工具时，runner 提前拦截，防止无效循环。"""
@@ -394,7 +394,7 @@ class TestFailurePaths:
         assert result.status == "partial"
         assert len(result.tool_calls) == 1
         assert len(result.errors) >= 1
-        assert any("repeated_tool_call_blocked" in e for e in result.errors)
+        assert any("重复工具调用" in e for e in result.errors)
         # 即使触发循环保护，仍生成了降级答案
         assert result.answer != ""
 
@@ -471,7 +471,7 @@ class TestMultiStep:
         assert not result.events[0].success  # 第一步失败
         assert result.events[1].success  # 第二步成功
         assert len(result.errors) >= 1
-        assert "FileNotFoundError" in result.errors[0]
+        assert "文件不存在" in result.errors[0]
         assert result.answer != ""
 
     def test_search_then_read_best_match(self, project_dir, fake_embedding):
