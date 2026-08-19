@@ -102,7 +102,6 @@ codebase-agent/
 ├── frontend/                    # React/Vite 前端操作台
 ├── docs/                        # 架构图与 Agent 流程图说明
 ├── scripts/
-│   ├── validate_project.py      # 一键自检脚本
 │   ├── evaluate_rag.py          # 固定评估集检索评估
 │   ├── github_fetcher.py        # GitHub 文件列表导出工具
 │   ├── json_reader.py           # 仓库文件 JSON 摘要工具
