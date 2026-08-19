@@ -14,9 +14,3 @@ output/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-dsh-client-ui-aqua/
-.dsh-vision-toolkit/
-.npm-cache/
-DSH-Transparent-UI-Plugin/
-dsh-client-ui-whale/
-wallpaper/

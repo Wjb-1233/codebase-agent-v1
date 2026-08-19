@@ -10,6 +10,9 @@ from codebase_agent.rag.chunker import Chunk
 from codebase_agent.rag.embeddings import EmbeddingProvider
 from codebase_agent.rag.vector_store import SearchResult, search_code as _search_code
 
+# 读取文件内容的上限（字符数），防止超大文件撑爆上下文
+MAX_FILE_CONTENT_CHARS = 50_000
+
 
 def list_files(project_root: str, file_pattern: str = "*.py", **kwargs: object) -> list[str]:
     """列出项目根目录及其子目录中匹配 pattern 的文件。
@@ -36,7 +39,13 @@ def get_file_content(path: str, project_root: str, **kwargs: object) -> str:
     full_path = (Path(project_root) / path).resolve()
     if not full_path.is_file():
         raise FileNotFoundError(f"文件不存在: {path}")
-    return full_path.read_text(encoding="utf-8")
+    content = full_path.read_text(encoding="utf-8")
+    if len(content) > MAX_FILE_CONTENT_CHARS:
+        return (
+            content[:MAX_FILE_CONTENT_CHARS]
+            + f"\n...(文件过大，已截断前 {MAX_FILE_CONTENT_CHARS} 字符)"
+        )
+    return content
 
 
 def search_code(

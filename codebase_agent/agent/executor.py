@@ -93,16 +93,17 @@ def _summarize_input(arguments: dict[str, object]) -> dict[str, object]:
 
 
 def _summarize_output(output: object) -> str | None:
-    """生成脱敏的输出摘要。"""
+    """生成脱敏的输出摘要。
+
+    审计事件只记录输出的形状（数量/长度/类型），绝不记录原始内容——
+    即使是短文本也不原样返回，防止短配置文件（如 .env 片段）进入事件。
+    """
     if output is None:
         return "无输出"
     if isinstance(output, list):
         return f"返回 {len(output)} 条结果"
     if isinstance(output, str):
-        size = len(output)
-        if size <= 120:
-            return output
-        return f"文本 ({size} 字符)"
+        return f"文本 ({len(output)} 字符)"
     return type(output).__name__
 
 

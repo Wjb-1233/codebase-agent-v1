@@ -26,7 +26,8 @@ npm run dev
 
 ### 前端控制台能力
 
-- RAG 问答：调用 `/chat`，展示回答、引用来源、分数、父文档信息和 `vector_backend`。
+- GitHub 拉取：调用 `/github/fetch`，输入仓库 URL 拉取代码文件（按语言后缀过滤、默认最多 50 个）填充请求快照，直接进入下述各分析链路；匿名访问触发限流时返回 429 并提示配置 `GITHUB_TOKEN`。
+- RAG 问答：调用 `/chat`，展示回答、引用来源、分数、父文档信息和 `vector_backend`；支持 `session_id` 会话记忆（多轮追问、历史裁剪、失败降级）。
 - 流式问答：调用 `/chat/stream`，展示 SSE `chunk/done/error` 流程。
 - Agent 分析：调用 `/agent/run`，展示回答、工具调用、执行事件、追踪 ID 和会话记忆状态。
 - 代码结构图：调用 `/code-graph`，展示文件节点、函数/类/方法符号和 import 依赖关系；Python 使用 AST，JavaScript/TypeScript、Java、Go 使用轻量静态解析规则。
@@ -608,6 +609,8 @@ curl -X POST http://localhost:8000/agent/run \
 ### 已完成能力
 
 - **数据库**：SQLAlchemy 2.x 持久化，默认 SQLite，`DATABASE_URL` 可切换 PostgreSQL；`compose.yaml` 提供 `postgres` profile。
+- **GitHub 拉取**：新增 `/github/fetch`，按语言后缀过滤并批量拉取仓库代码文件，返回可直接进入 RAG/Agent/代码图的文件快照；修复匿名访问的 `Bearer None` 头问题，限流时返回 429 并提示配置 `GITHUB_TOKEN`。
+- **RAG 会话记忆**：`/chat` 与 `/chat/stream` 支持可选 `session_id`，自动持久化问答、加载历史进入 prompt（多轮指代追问）、超长历史裁剪，记忆读写失败不影响回答。
 - **RAG 检索**：OpenAI Embeddings、向量检索、BM25 关键词检索、RRF 融合、父文档扩展、可选 Cross-Encoder 重排。
 - **Qdrant**：`VECTOR_STORE_BACKEND=qdrant` 后 `/search`、`/chat`、`/chat/stream` 自动使用 Qdrant 持久向量库，collection 按文件内容 hash 隔离。
 - **流式响应**：新增 `/chat/stream`，使用 SSE 输出 `chunk`、`done`、`error` 事件，前端可边生成边展示答案。

@@ -212,7 +212,7 @@ async def github_fetch(request: GithubFetchRequest) -> GithubFetchResponse:
 
 
 class CodeGraphRequest(BaseModel):
-    files: list[SearchFileInput]
+    files: list[SearchFileInput] = Field(max_length=100)
 
 
 class CodeGraphNodeItem(BaseModel):
@@ -284,7 +284,7 @@ def code_graph(request: CodeGraphRequest) -> CodeGraphResponse:
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1)
     top_k: int = Field(default=5, gt=0, le=50)
-    files: list[SearchFileInput]
+    files: list[SearchFileInput] = Field(max_length=100)
 
 
 class SearchResultItem(BaseModel):
@@ -481,7 +481,7 @@ class ConversationTurnItem(BaseModel):
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
     top_k: int = Field(default=5, gt=0, le=20)
-    files: list[SearchFileInput] = Field(default_factory=list)
+    files: list[SearchFileInput] = Field(default_factory=list, max_length=100)
     session_id: str | None = Field(default=None, max_length=128)
     history: list[ConversationTurnItem] = Field(default_factory=list)
 
@@ -780,7 +780,7 @@ def _generation_evaluator_mode() -> str:
 class AgentRunRequest(BaseModel):
     """Agent 运行请求——模型自主决定调用哪些工具。"""
     question: str = Field(min_length=1)
-    files: list[SearchFileInput] = Field(default_factory=list)
+    files: list[SearchFileInput] = Field(default_factory=list, max_length=100)
     top_k: int = Field(default=5, gt=0, le=50)
     max_steps: int = Field(default=3, gt=0, le=10)
     history: list[ConversationTurnItem] = Field(default_factory=list)
