@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -11,4 +13,4 @@ class AnalysisRecord(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     repo_url: Mapped[str] = mapped_column(nullable=False)
     count: Mapped[int] = mapped_column(nullable=False)
-    create_at: Mapped[str] = mapped_column(nullable=False)
+    create_at: Mapped[datetime] = mapped_column(nullable=False)
