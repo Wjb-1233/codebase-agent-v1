@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
@@ -16,6 +16,7 @@ from codebase_agent.backend.database import init_db, list_recent_analyses, save_
 from codebase_agent.backend.github_client import GitHubClient
 from codebase_agent.code_graph import CodeGraphInputFile, build_code_graph
 from codebase_agent.exceptions import (
+    CodebaseError,
     ConfigError,
     EmbeddingError,
     GitHubAPIError,
@@ -41,11 +42,23 @@ from codebase_agent.rag.evaluator import (
     evaluate_generation,
     evaluate_generation_with_llm_judge,
 )
+from codebase_agent.agent.memory import ConversationTurn, build_short_term_context
 from codebase_agent.agent.memory_store import AgentMemoryStore
 from codebase_agent.agent.runner import AgentModelProvider, AgentRunResult, AgentToolCall, run_agent as _run_agent
 from codebase_agent.agent.llm_provider import OpenAIAgentProvider
 
 app = FastAPI()
+
+
+@app.exception_handler(CodebaseError)
+async def codebase_error_handler(request: Request, exc: CodebaseError) -> JSONResponse:
+    """全局兜底：端点未捕获的项目异常按 exc.code 映射为 HTTP 状态码。
+
+    各端点内已有的 try/except 仍优先（FastAPI 先走端点内处理），
+    这里只兜住漏网的项目异常，避免未处理异常变成 500 裸错误。
+    """
+    status_code = exc.code if isinstance(exc.code, int) and 100 <= exc.code <= 599 else 500
+    return JSONResponse(status_code=status_code, content={"detail": str(exc)})
 
 
 def _cors_origins() -> list[str]:
@@ -110,10 +123,11 @@ async def analyze(
             files = await client.get_file_tree()
     except NetworkError:
         raise HTTPException(502, detail="GitHub API 不可用")
+    # RateLimitError 是 GitHubAPIError 的子类，必须放在父类之前
+    except RateLimitError:
+        raise HTTPException(429, detail="GitHub API 限流，稍后重试")
     except GitHubAPIError:
         raise HTTPException(502, detail="GitHub API 返回错误")
-    except RateLimitError:
-        raise HTTPException(502, detail="GitHub API 限流，稍后重试")
     except ConfigError:
         raise HTTPException(400, detail="配置错误")
     if len(files) > max_files:
@@ -132,6 +146,69 @@ def history(limit: int = 20, db_path: str = Depends(get_db_path)):
 class SearchFileInput(BaseModel):
     file_path: str
     content: str
+
+
+# 与 code_graph 支持的语言一致，拉取后可直接进入 RAG / Agent / 代码图链路
+_CODE_SUFFIXES = {".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".go"}
+
+
+class GithubFetchRequest(BaseModel):
+    repo_url: str
+    max_files: int = Field(default=50, gt=0, le=200)
+
+
+class GithubFetchResponse(BaseModel):
+    files: list[SearchFileInput]
+    total: int
+    skipped: int
+
+
+@app.post("/github/fetch", response_model=GithubFetchResponse)
+async def github_fetch(request: GithubFetchRequest) -> GithubFetchResponse:
+    """从 GitHub 仓库拉取代码文件内容，返回可直接作为请求快照的 files 数组。
+
+    匿名访问 GitHub API 有 60 次/小时的限流；未配置 GITHUB_TOKEN 时，
+    批量拉取会因限流跳过部分文件——能拿到的都返回，跳过数通过 skipped 上报。
+    """
+    repo_url = request.repo_url.strip()
+    if not repo_url:
+        raise HTTPException(status_code=400, detail="repo_url 不能为空")
+
+    try:
+        async with GitHubClient(repo_url) as client:
+            tree = await client.get_file_tree()
+    except NetworkError:
+        raise HTTPException(502, detail="GitHub API 不可用")
+    # RateLimitError 是 GitHubAPIError 的子类，必须放在父类之前
+    except RateLimitError:
+        raise HTTPException(429, detail="GitHub API 限流（匿名 60 次/小时），请配置 GITHUB_TOKEN")
+    except GitHubAPIError:
+        raise HTTPException(502, detail="GitHub API 返回错误")
+    except ConfigError as exc:
+        raise HTTPException(400, detail=f"GitHub 仓库地址无效: {exc}")
+
+    code_paths = [
+        path
+        for path in tree
+        if Path(path).suffix.lower() in _CODE_SUFFIXES and not path.endswith(".min.js")
+    ][: request.max_files]
+
+    try:
+        async with GitHubClient(repo_url) as client:
+            contents = await client.get_file_contents(code_paths, limit=5)
+    except NetworkError:
+        raise HTTPException(502, detail="GitHub API 不可用")
+    except RateLimitError:
+        raise HTTPException(429, detail="GitHub API 限流（匿名 60 次/小时），请配置 GITHUB_TOKEN")
+    except GitHubAPIError:
+        raise HTTPException(502, detail="GitHub API 返回错误")
+
+    files = [
+        SearchFileInput(file_path=path, content=contents[path])
+        for path in code_paths
+        if path in contents
+    ]
+    return GithubFetchResponse(files=files, total=len(files), skipped=len(code_paths) - len(files))
 
 
 class CodeGraphRequest(BaseModel):
@@ -394,10 +471,19 @@ async def search(
     return SearchResponse(query=request.query, top_k=request.top_k, results=items, vector_backend=vector_backend)
 
 
+class ConversationTurnItem(BaseModel):
+    """单轮对话条目——API 接收的 history 格式。"""
+
+    role: str = Field(pattern="^(user|assistant|system)$")
+    content: str = Field(default="")
+
+
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
     top_k: int = Field(default=5, gt=0, le=20)
     files: list[SearchFileInput] = Field(default_factory=list)
+    session_id: str | None = Field(default=None, max_length=128)
+    history: list[ConversationTurnItem] = Field(default_factory=list)
 
     @field_validator("question")
     @classmethod
@@ -411,6 +497,14 @@ class ChatResponse(BaseModel):
     answer: str
     retrieved_chunks: list[SearchResultItem]
     vector_backend: str = "memory"
+    session_id: str | None = None
+    memory_scope: str = "request"
+    memory_used: bool = False
+    memory_turns: int = 0
+
+
+def get_agent_memory_store() -> AgentMemoryStore:
+    return AgentMemoryStore()
 
 
 def get_llm_provider() -> LLMProvider:
@@ -423,15 +517,34 @@ async def chat(
     embedding_provider: EmbeddingProvider = Depends(get_embedding_provider),
     llm: LLMProvider = Depends(get_llm_provider),
     reranker: CrossEncoderReranker | IdentityReranker = Depends(get_reranker),
+    memory_store: AgentMemoryStore = Depends(get_agent_memory_store),
 ) -> ChatResponse:
     all_chunks: list[Chunk] = []
     for file in request.files:
         all_chunks.extend(chunk_file(file.file_path, file.content))
 
+    # 会话记忆：session_id 存在时加载持久化轮次，显式 history 追加其后。
+    # 记忆读写失败不致命（记忆是增强，不是必需）。
+    memory_scope = "request"
+    history_turns: list[ConversationTurn] = []
+    if request.session_id:
+        memory_scope = "session"
+        try:
+            history_turns.extend(memory_store.list_turns(request.session_id, limit=20))
+        except Exception:
+            pass
+    for turn in request.history:
+        history_turns.append(ConversationTurn(role=turn.role, content=turn.content))
+    memory_ctx = build_short_term_context(history_turns, max_turns=10, max_chars=4000)
+
     if not all_chunks:
         return ChatResponse(
             answer="没有找到相关代码文件。",
             retrieved_chunks=[],
+            session_id=request.session_id,
+            memory_scope=memory_scope,
+            memory_used=memory_ctx.memory_used,
+            memory_turns=memory_ctx.memory_turns,
         )
 
     try:
@@ -457,7 +570,7 @@ async def chat(
 
     items = [_to_search_result_item(result) for result in search_results]
 
-    prompt = build_rag_prompt(request.question, items)
+    prompt = build_rag_prompt(request.question, items, history_context=memory_ctx.formatted)
 
     try:
         answer = llm.generate(prompt)
@@ -466,7 +579,28 @@ async def chat(
     except LLMError:
         raise HTTPException(status_code=502, detail="LLM 服务暂时不可用")
 
-    return ChatResponse(answer=answer, retrieved_chunks=items, vector_backend=vector_backend)
+    # 持久化本轮问答，供同一 session 的下一轮加载（失败不致命）
+    if request.session_id and answer:
+        try:
+            memory_store.append_turns(
+                request.session_id,
+                [
+                    ConversationTurn(role="user", content=request.question),
+                    ConversationTurn(role="assistant", content=answer),
+                ],
+            )
+        except Exception:
+            pass
+
+    return ChatResponse(
+        answer=answer,
+        retrieved_chunks=items,
+        vector_backend=vector_backend,
+        session_id=request.session_id,
+        memory_scope=memory_scope,
+        memory_used=memory_ctx.memory_used,
+        memory_turns=memory_ctx.memory_turns,
+    )
 
 @app.post("/chat/stream")
 async def chat_stream(
@@ -474,14 +608,36 @@ async def chat_stream(
     embedding_provider: EmbeddingProvider = Depends(get_embedding_provider),
     llm: LLMProvider = Depends(get_llm_provider),
     reranker: CrossEncoderReranker | IdentityReranker = Depends(get_reranker),
+    memory_store: AgentMemoryStore = Depends(get_agent_memory_store),
 ) -> StreamingResponse:
     all_chunks: list[Chunk] = []
     for file in request.files:
         all_chunks.extend(chunk_file(file.file_path, file.content))
 
+    # 会话记忆：与 /chat 相同——session_id 存在时加载历史，失败不致命
+    memory_scope = "request"
+    history_turns: list[ConversationTurn] = []
+    if request.session_id:
+        memory_scope = "session"
+        try:
+            history_turns.extend(memory_store.list_turns(request.session_id, limit=20))
+        except Exception:
+            pass
+    for turn in request.history:
+        history_turns.append(ConversationTurn(role=turn.role, content=turn.content))
+    memory_ctx = build_short_term_context(history_turns, max_turns=10, max_chars=4000)
+
     if not all_chunks:
         def empty_stream():
-            payload = {"answer": "", "retrieved_chunks": [], "vector_backend": "memory"}
+            payload = {
+                "answer": "",
+                "retrieved_chunks": [],
+                "vector_backend": "memory",
+                "session_id": request.session_id,
+                "memory_scope": memory_scope,
+                "memory_used": memory_ctx.memory_used,
+                "memory_turns": memory_ctx.memory_turns,
+            }
             yield _sse_event("done", payload)
         return StreamingResponse(empty_stream(), media_type="text/event-stream")
 
@@ -505,7 +661,7 @@ async def chat_stream(
     parent_map = build_parent_map(all_chunks)
     search_results = expand_with_parents(search_results, parent_map, request.top_k)
     items = [_to_search_result_item(result) for result in search_results]
-    prompt = build_rag_prompt(request.question, items)
+    prompt = build_rag_prompt(request.question, items, history_context=memory_ctx.formatted)
 
     def event_stream():
         answer_parts: list[str] = []
@@ -520,12 +676,30 @@ async def chat_stream(
             yield _sse_event("error", {"error_type": "llm_error", "detail": str(exc)})
             return
 
+        # 答案完整后持久化本轮问答（失败不致命）
+        answer_text = "".join(answer_parts)
+        if request.session_id and answer_text:
+            try:
+                memory_store.append_turns(
+                    request.session_id,
+                    [
+                        ConversationTurn(role="user", content=request.question),
+                        ConversationTurn(role="assistant", content=answer_text),
+                    ],
+                )
+            except Exception:
+                pass
+
         yield _sse_event(
             "done",
             {
-                "answer": "".join(answer_parts),
+                "answer": answer_text,
                 "retrieved_chunks": [item.model_dump() for item in items],
                 "vector_backend": vector_backend,
+                "session_id": request.session_id,
+                "memory_scope": memory_scope,
+                "memory_used": memory_ctx.memory_used,
+                "memory_turns": memory_ctx.memory_turns,
             },
         )
 
@@ -603,12 +777,6 @@ def _generation_evaluator_mode() -> str:
 
 # ── Agent /agent/run ──
 
-class ConversationTurnItem(BaseModel):
-    """单轮对话条目——API 接收的 history 格式。"""
-    role: str = Field(pattern="^(user|assistant|system)$")
-    content: str = Field(default="")
-
-
 class AgentRunRequest(BaseModel):
     """Agent 运行请求——模型自主决定调用哪些工具。"""
     question: str = Field(min_length=1)
@@ -670,9 +838,6 @@ def _write_request_files(project_root: str, files: list[SearchFileInput]) -> Non
             raise HTTPException(status_code=400, detail="请求文件中包含不安全路径")
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(file.content, encoding="utf-8")
-
-def get_agent_memory_store() -> AgentMemoryStore:
-    return AgentMemoryStore()
 
 def get_agent_model_provider() -> AgentModelProvider | None:
     """依赖注入，测试时可用 dependency_overrides 替换为假模型。"""

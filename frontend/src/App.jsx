@@ -133,10 +133,27 @@ function App() {
   const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem(API_BASE_KEY) || "http://127.0.0.1:8000");
   const [filesText, setFilesText] = useState(formatJson(DEFAULT_FILES));
   const [activeTab, setActiveTab] = useState("chat");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubFetching, setGithubFetching] = useState(false);
+  const [githubError, setGithubError] = useState("");
 
   function updateBaseUrl(value) {
     setBaseUrl(value);
     localStorage.setItem(API_BASE_KEY, value);
+  }
+
+  async function fetchGithubFiles() {
+    if (!githubUrl.trim() || githubFetching) return;
+    setGithubFetching(true);
+    setGithubError("");
+    try {
+      const data = await requestJson(baseUrl, "/github/fetch", { repo_url: githubUrl.trim() });
+      setFilesText(formatJson(data.files || []));
+    } catch (err) {
+      setGithubError(err.message);
+    } finally {
+      setGithubFetching(false);
+    }
   }
 
   const files = useMemo(() => {
@@ -174,6 +191,17 @@ function App() {
       <section className="workbench">
         <aside className="side-panel">
           <div className="panel-title"><FileCode2 size={18} />请求文件快照</div>
+          <div className="github-fetch">
+            <input
+              value={githubUrl}
+              onChange={(event) => setGithubUrl(event.target.value)}
+              placeholder="GitHub 仓库 URL（可选，拉取后填充快照）"
+            />
+            <button onClick={fetchGithubFiles} disabled={githubFetching || !githubUrl.trim()} type="button">
+              {githubFetching ? "拉取中…" : "拉取文件"}
+            </button>
+          </div>
+          {githubError && <div className="status-line error">{githubError}</div>}
           <textarea
             className="files-editor"
             value={filesText}
@@ -234,10 +262,12 @@ function TabButton({ active, onClick, icon, label }) {
 function ChatPanel({ baseUrl, filesText }) {
   const [question, setQuestion] = useState("数据库连接在哪里实现？");
   const [topK, setTopK] = useState(3);
+  const [sessionId, setSessionId] = useState("");
   const [mode, setMode] = useState("idle");
   const [answer, setAnswer] = useState("");
   const [chunks, setChunks] = useState([]);
   const [backend, setBackend] = useState("");
+  const [memoryScope, setMemoryScope] = useState("");
   const [error, setError] = useState("");
 
   async function runChat(streaming) {
@@ -248,12 +278,18 @@ function ChatPanel({ baseUrl, filesText }) {
     setBackend("");
     try {
       const files = parseFiles(filesText);
-      const payload = { question, top_k: Number(topK), files };
+      const payload = {
+        question,
+        top_k: Number(topK),
+        files,
+        ...(sessionId.trim() ? { session_id: sessionId.trim() } : {}),
+      };
       if (!streaming) {
         const data = await requestJson(baseUrl, "/chat", payload);
         setAnswer(data.answer || "");
         setChunks(data.retrieved_chunks || []);
         setBackend(data.vector_backend || "memory");
+        setMemoryScope(data.memory_scope || "");
       } else {
         await requestStream(baseUrl, payload, ({ event, data }) => {
           if (event === "chunk") {
@@ -263,6 +299,7 @@ function ChatPanel({ baseUrl, filesText }) {
             setAnswer(data.answer || "");
             setChunks(data.retrieved_chunks || []);
             setBackend(data.vector_backend || "memory");
+            setMemoryScope(data.memory_scope || "");
           }
           if (event === "error") {
             setError(`${formatStreamError(data.error_type)}: ${data.detail}`);
@@ -287,6 +324,10 @@ function ChatPanel({ baseUrl, filesText }) {
           <span>返回数量 Top K</span>
           <input type="number" min="1" max="20" value={topK} onChange={(event) => setTopK(event.target.value)} />
         </label>
+        <label>
+          <span>会话 ID（可选，留空为单轮）</span>
+          <input value={sessionId} onChange={(event) => setSessionId(event.target.value)} placeholder="如 demo-1" />
+        </label>
       </div>
       <div className="button-row">
         <button className="primary" onClick={() => runChat(false)} disabled={mode === "loading" || mode === "streaming"} type="button">
@@ -298,7 +339,7 @@ function ChatPanel({ baseUrl, filesText }) {
           流式问答
         </button>
       </div>
-      <ResultBlock error={error} answer={answer} backend={backend} />
+      <ResultBlock error={error} answer={answer} backend={backend} memoryScope={memoryScope} />
       <SourceList chunks={chunks} />
     </div>
   );
@@ -555,12 +596,13 @@ function EvaluationPanel({ baseUrl }) {
   );
 }
 
-function ResultBlock({ error, answer, backend }) {
+function ResultBlock({ error, answer, backend, memoryScope }) {
   if (error) return <ErrorNotice message={error} />;
   if (!answer) return <EmptyNotice text="还没有回答。先提交一次普通问答或流式问答。" />;
+  const memoryLabel = memoryScope === "session" ? "· 会话记忆" : "";
   return (
     <article className="answer-card">
-      <div className="card-label"><Activity size={16} />回答 {backend ? `· 向量后端=${formatBackend(backend)}` : ""}</div>
+      <div className="card-label"><Activity size={16} />回答 {backend ? `· 向量后端=${formatBackend(backend)}` : ""}{memoryLabel}</div>
       <p>{answer}</p>
     </article>
   );

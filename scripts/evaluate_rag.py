@@ -152,7 +152,7 @@ def main() -> int:
                 "embedding_model": provider.model,
                 "all_results": [
                     {
-                        "question": r.question[:80],
+                        "question": r.question,
                         "expected_file": r.expected_file,
                         "hit": r.hit,
                         "reciprocal_rank": r.reciprocal_rank,

@@ -33,10 +33,10 @@ class GitHubClient:
         self._client = None
 
     async def __aenter__(self):
-        self._client = httpx.AsyncClient(
-            timeout=10,
-            headers={"Authorization": f"Bearer {self.token}"},
-        )
+        # 未配置 GITHUB_TOKEN 时不发送 Authorization 头，
+        # 否则 "Bearer None" 会被 GitHub API 判为 401，匿名配额（60 次/小时）无法使用。
+        headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+        self._client = httpx.AsyncClient(timeout=10, headers=headers)
         return self
 
     async def __aexit__(self, *args):

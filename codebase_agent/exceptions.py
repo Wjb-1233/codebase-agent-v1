@@ -34,10 +34,10 @@ class NetworkError(GitHubAPIError):
 
 
 class ConfigError(CodebaseError):
-    """配置错误时抛出的异常。"""
+    """配置错误时抛出的异常（服务端配置问题，映射为 500）。"""
 
     def __init__(self, message="配置错误"):
-        super().__init__(message=message, code=400)
+        super().__init__(message=message, code=500)
 
 
 class EmbeddingError(CodebaseError):

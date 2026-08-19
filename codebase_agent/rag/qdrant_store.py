@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Protocol
 
+from codebase_agent.exceptions import CodebaseError
 from codebase_agent.rag.chunker import Chunk
 from codebase_agent.rag.vector_store import SearchResult
 
@@ -35,7 +36,7 @@ class QdrantClientProtocol(Protocol):
 # ── 项目异常 ──
 
 
-class VectorStoreError(RuntimeError):
+class VectorStoreError(CodebaseError):
     """向量库适配层遇到不可恢复错误时抛出。"""
 
 
