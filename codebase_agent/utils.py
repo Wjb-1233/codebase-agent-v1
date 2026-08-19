@@ -1,27 +1,9 @@
-from functools import wraps
 from logging import getLogger
-from time import perf_counter
-from types import TracebackType
-from typing import Any, Callable, TypeVar, cast
 import time
+from types import TracebackType
 from contextlib import contextmanager
-F = TypeVar("F", bound=Callable[..., Any])
+
 logger = getLogger(__name__)
-
-
-def cache_result(func: F) -> F:
-    cache: dict[tuple[Any, frozenset[tuple[str, Any]]], Any] = {}
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        key = (args, frozenset(kwargs.items()))
-        if key in cache:
-            return cache[key]
-        result = func(*args, **kwargs)
-        cache[key] = result
-        return result
-
-    return cast(F, wrapper)
 
 
 class timed_operation:

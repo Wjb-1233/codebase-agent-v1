@@ -11,10 +11,9 @@ from codebase_agent.exceptions import (
     NetworkError,
     RateLimitError,
 )
-from codebase_agent.utils import cache_result, timed_operation
+from codebase_agent.utils import timed_operation
 
 __all__ = [
-    "cache_result",
     "timed_operation",
     "CodebaseError",
     "ConfigError",
